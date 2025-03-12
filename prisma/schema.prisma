@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DIRECT_URL")
+}
+
+
+model User {
+  id       String   @id @default(uuid())
+  email    String   @unique
+  name     String?
+  password String
+  role     Role     @default(USER)
+  devices  Device[]
+  orders   Order[]
+
+  @@map("User")
+}
+
+model Book {
+  id            String      @id @default(uuid())
+  title         String
+  author        String
+  description   String?
+  images        Json
+  createdAt     DateTime    @default(now())
+  digitalPrice  Float?
+  physicalPrice Float?
+  stock         Int?
+  bookFile      String?
+  orderItems    OrderItem[]
+}
+
+model OrderItem {
+  id      String @id @default(uuid())
+  orderId String
+  bookId  String
+  book    Book   @relation(fields: [bookId], references: [id])
+  order   Order  @relation(fields: [orderId], references: [id])
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  userId     String
+  total      Float
+  createdAt  DateTime    @default(now())
+  user       User        @relation(fields: [userId], references: [id])
+  orderItems OrderItem[]
+  status     OrderStatus @default(PENDING)
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  REFUNDED
+}
+
+
+model Device {
+  id        String   @id @default(uuid())
+  userId    String
+  deviceId  String   @unique
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
