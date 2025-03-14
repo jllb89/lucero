@@ -4,21 +4,26 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DIRECT_URL")
+  url      = env("DATABASE_URL") // ✅ Default to Prisma Accelerate
+  directUrl = env("USE_DIRECT_URL") == "true" ? env("DIRECT_URL") : env("DATABASE_URL")
 }
 
 
 model User {
-  id       String   @id @default(uuid())
-  email    String   @unique
-  name     String?
-  password String
-  role     Role     @default(USER)
-  devices  Device[]
-  orders   Order[]
+  id          String   @id @default(uuid())
+  email       String   @unique
+  name        String?
+  password    String
+  role        Role     @default(USER)
+  phoneNumber String
+  address     String?
+  createdAt   DateTime @default(now())
+  devices     Device[]
+  orders      Order[]
 
   @@map("User")
 }
+
 
 model Book {
   id            String      @id @default(uuid())
@@ -47,17 +52,10 @@ model Order {
   userId     String
   total      Float
   createdAt  DateTime    @default(now())
+  status     OrderStatus @default(PENDING)
   user       User        @relation(fields: [userId], references: [id])
   orderItems OrderItem[]
-  status     OrderStatus @default(PENDING)
 }
-
-enum OrderStatus {
-  PENDING
-  COMPLETED
-  REFUNDED
-}
-
 
 model Device {
   id        String   @id @default(uuid())
@@ -65,6 +63,12 @@ model Device {
   deviceId  String   @unique
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  REFUNDED
 }
 
 enum Role {

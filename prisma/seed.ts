@@ -9,7 +9,7 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash("admin123", 10);
 
-  // Ensure ADMIN users exist
+  // Ensure ADMIN user exists
   const admin = await prisma.user.upsert({
     where: { email: "lcastr60@gmail.com" },
     update: {},
@@ -18,9 +18,13 @@ async function main() {
       name: "Admin User",
       password: hashedPassword,
       role: "ADMIN",
+      phoneNumber: "555-1001",
+      address: "123 Admin St",
+      createdAt: new Date(),
     },
   });
 
+  // Ensure SUPER_ADMIN user exists
   const superAdmin = await prisma.user.upsert({
     where: { email: "lopezb.jl@gmail.com" },
     update: {},
@@ -29,6 +33,9 @@ async function main() {
       name: "Super Admin User",
       password: hashedPassword,
       role: "SUPER_ADMIN",
+      phoneNumber: "555-1002",
+      address: "456 SuperAdmin Ave",
+      createdAt: new Date(),
     },
   });
 
@@ -46,6 +53,9 @@ async function main() {
           name: `User ${i}`,
           password: await bcrypt.hash(`password${i}`, 10),
           role: "USER",
+          phoneNumber: `555-10${i + 2}`, // Unique phone numbers
+          address: `Address for User ${i}`,
+          createdAt: new Date(),
         },
       })
     );
@@ -87,8 +97,8 @@ async function main() {
       orders.push(
         prisma.order.create({
           data: {
-            userId: user.id, // Using the correct user ID
-            total, // 🔥 Changed from `totalAmount` to `total`
+            userId: user.id,
+            total,
             createdAt: new Date(),
           },
         })

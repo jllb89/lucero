@@ -64,8 +64,21 @@ const columns: ColumnDef<Order>[] = [
   {
     header: "Estado del pedido",
     accessorKey: "status",
-    cell: ({ row }) => <Badge className="bg-black text-white">{row.getValue("status")}</Badge>,
+    cell: ({ row }) => {
+      const statusMap: Record<string, string> = {
+        PENDING: "Pendiente",
+        COMPLETED: "Completado",
+        REFUNDED: "Devolución",
+      };
+  
+      return (
+        <Badge className="bg-black text-white">
+          {statusMap[row.getValue("status")] || row.getValue("status")}
+        </Badge>
+      );
+    },
   },
+  
   {
     header: "Fecha",
     accessorKey: "createdAt",
