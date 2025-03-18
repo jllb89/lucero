@@ -5,7 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL") // ✅ Default to Prisma Accelerate
-  directUrl = env("USE_DIRECT_URL") == "true" ? env("DIRECT_URL") : env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // ✅ Use the direct URL from env variables
 }
 
 
@@ -24,7 +24,6 @@ model User {
   @@map("User")
 }
 
-
 model Book {
   id            String      @id @default(uuid())
   title         String
@@ -36,6 +35,8 @@ model Book {
   physicalPrice Float?
   stock         Int?
   bookFile      String?
+  bookCover     String?  
+  category      Category
   orderItems    OrderItem[]
 }
 
@@ -75,4 +76,11 @@ enum Role {
   USER
   ADMIN
   SUPER_ADMIN
+}
+
+enum Category {
+  PRIMARIA
+  SECUNDARIA
+  BACHILLERATO
+  PARA_MAESTROS
 }

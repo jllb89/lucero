@@ -3,7 +3,6 @@ import { usePathname } from "next/navigation";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { LayoutDashboard, Users, Package, ShoppingCart, Settings, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
 
 const adminLinks = [
     { label: "Inicio", href: "/admin", icon: LayoutDashboard },
@@ -17,7 +16,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const pathname = usePathname();
 
     return (
-        <div className="flex h-screen bg-neutral-100 dark:bg-neutral-900">
+        <div className="flex h-screen bg-neutral-100 dark:bg-neutral-900 overflow-hidden">
             {/* Sidebar */}
             <Sidebar>
                 <SidebarBody className="justify-between gap-10">
@@ -38,7 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         </div>
                     </div>
 
-                    {/* Admin Profile & Logout - Properly Aligned */}
+                    {/* Admin Profile & Logout */}
                     <div className="mt-6 flex flex-col gap-2">
                         <SidebarLink
                             link={{
@@ -64,8 +63,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </SidebarBody>
             </Sidebar>
 
-            {/* Main Content */}
-            <div className="flex-1 p-6 overflow-y-auto">{children}</div>
+            {/* Main Content - Fixed Scrolling Issue */}
+            <div className="flex-1 p-6 overflow-y-auto h-full">{children}</div>
         </div>
     );
 }

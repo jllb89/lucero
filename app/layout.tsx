@@ -1,4 +1,5 @@
-import "@/styles/global.css"; // ✅ Import Tailwind CSS
+import "@/styles/global.css";
+import "@/styles/animations.css";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

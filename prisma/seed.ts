@@ -1,4 +1,4 @@
-const { PrismaClient } = require("@prisma/client");
+const { PrismaClient, Category } = require("@prisma/client");  // ✅ Import Category enum
 const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require("uuid");
 
@@ -64,21 +64,23 @@ async function main() {
   await Promise.all(users);
   console.log("✅ 10 users seeded!");
 
-  // Generate 10 books
+  // Seed Books
   const books = [];
   for (let i = 1; i <= 10; i++) {
     books.push(
       prisma.book.create({
         data: {
-          id: uuidv4(),
+          id: `book-${i}`,
           title: `Book Title ${i}`,
           author: `Author ${i}`,
           description: `Description for Book ${i}.`,
-          digitalPrice: parseFloat((Math.random() * 50 + 10).toFixed(2)),
-          physicalPrice: parseFloat((Math.random() * 60 + 20).toFixed(2)),
-          stock: Math.floor(Math.random() * 100),
+          digitalPrice: parseFloat((30 + i * 2).toFixed(2)), // ✅ Convert to float
+          physicalPrice: parseFloat((50 + i * 3).toFixed(2)), // ✅ Convert to float
+          stock: 10 + i,
           images: [`https://via.placeholder.com/150?text=Book+${i}`],
           bookFile: `https://example.com/book${i}.pdf`,
+          bookCover: `https://via.placeholder.com/200x300?text=Cover+${i}`,
+          category: Object.values(Category)[i % Object.values(Category).length], // ✅ Assign valid enum
         },
       })
     );
@@ -114,7 +116,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error("❌ Seeding error:", e);
     process.exit(1);
   })
   .finally(async () => {

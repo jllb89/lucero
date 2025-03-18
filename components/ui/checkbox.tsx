@@ -2,6 +2,7 @@
 
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import * as React from "react";
+
 import { cn } from "@/lib/utils";
 
 const Checkbox = React.forwardRef<
@@ -11,16 +12,20 @@ const Checkbox = React.forwardRef<
   <CheckboxPrimitive.Root
     ref={ref}
     className={cn(
-      "peer size-4 shrink-0 rounded border border-gray-300 dark:border-gray-600 bg-transparent shadow-sm outline-none",
-      "focus-visible:ring-2 focus-visible:ring-gray-400 dark:focus-visible:ring-gray-500",
-      "data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
+      "peer size-4 shrink-0 rounded border border-input shadow-sm shadow-black/5 outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-primary data-[state=indeterminate]:border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:bg-primary data-[state=checked]:text-primary-foreground data-[state=indeterminate]:text-primary-foreground",
       className
     )}
     {...props}
   >
     <CheckboxPrimitive.Indicator className="flex items-center justify-center text-current">
       {props.checked === "indeterminate" ? (
-        <svg width="9" height="9" viewBox="0 0 9 9" fill="currentcolor">
+        <svg
+          width="9"
+          height="9"
+          viewBox="0 0 9 9"
+          fill="currentcolor"
+          xmlns="http://www.w3.org/2000/svg"
+        >
           <path
             fillRule="evenodd"
             clipRule="evenodd"
@@ -28,7 +33,13 @@ const Checkbox = React.forwardRef<
           />
         </svg>
       ) : (
-        <svg width="9" height="9" viewBox="0 0 9 9" fill="currentcolor">
+        <svg
+          width="9"
+          height="9"
+          viewBox="0 0 9 9"
+          fill="currentcolor"
+          xmlns="http://www.w3.org/2000/svg"
+        >
           <path
             fillRule="evenodd"
             clipRule="evenodd"
