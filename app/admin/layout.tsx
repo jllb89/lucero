@@ -3,6 +3,7 @@ import { usePathname } from "next/navigation";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { LayoutDashboard, Users, Package, ShoppingCart, Settings, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Toaster } from "react-hot-toast";
 
 const adminLinks = [
     { label: "Inicio", href: "/admin", icon: LayoutDashboard },
@@ -64,7 +65,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Sidebar>
 
             {/* Main Content - Fixed Scrolling Issue */}
-            <div className="flex-1 p-6 overflow-y-auto h-full">{children}</div>
+            <div className="flex-1 p-6 overflow-y-auto h-full">
+                {children}
+                <Toaster position="top-right" />
+                </div>
         </div>
     );
 }
