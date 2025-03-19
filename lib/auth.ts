@@ -1,15 +1,14 @@
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
-const SECRET = process.env.JWT_SECRET || 'secret_key';
+const SECRET = process.env.JWT_SECRET || "default_secret";
 
-export function verifyToken(req: Request) {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader) return null;
-
-  const token = authHeader.split(' ')[1];
+export function verifyToken(token: string) {
   try {
-    return jwt.verify(token, SECRET);
-  } catch {
+    const decoded = jwt.verify(token, SECRET);
+    console.log("✅ Token Verified:", decoded);
+    return decoded;
+  } catch (error) {
+    console.log("❌ Token verification failed:", error);
     return null;
   }
 }

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input"; 
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { FileInput } from "@/components/ui/FileInput";
 import { FloatingInput } from "@/components/ui/FloatingInput";
 import { FloatingFileInput } from "@/components/ui/FloatingFileInput";
 import Link from "next/link";
@@ -27,12 +26,20 @@ export default function AddBookPage() {
     { key: "PARA_MAESTROS", label: "Para Maestros" }
   ];
 
-  // 📌 Handle form changes (inputs & select)
+  // 📌 Retrieve JWT Token from Cookies
+  const getTokenFromCookies = () => {
+    return document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1] || null;
+  };
+
+  // 📌 Handle form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 📌 Handle number inputs (format price)
+  // 📌 Handle price formatting
   const handlePriceBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (!value.trim()) return;
@@ -45,11 +52,19 @@ export default function AddBookPage() {
   };
 
   // 📌 Handle file uploads
-  const handleFileChange = (file: File | null, name: string) => {
-    setFormData({ ...formData, [name]: file });
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, files } = e.target;
+    if (!files || files.length === 0) return;
+
+    console.log(`📂 Handling file change for ${name}:`, files[0]);
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: files.length > 1 ? files : files[0], // Stores multiple or single files
+    }));
   };
 
-  // 📌 Convert file to Base64
+  // 📌 Convert file to Base64 for secure upload
   const convertFileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -62,36 +77,49 @@ export default function AddBookPage() {
   // 📌 Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+  
     if (!formData.title || !formData.author || !formData.bookFile) {
       toast.error("Please fill in all required fields.");
       return;
     }
-
+  
     setLoading(true);
     try {
+      console.log("📤 Preparing upload...");
+  
       // Convert files to Base64
       const base64BookFile = formData.bookFile ? await convertFileToBase64(formData.bookFile) : null;
       const base64BookCover = formData.bookCover ? await convertFileToBase64(formData.bookCover) : null;
-
-      // Send request to API
-      const res = await fetch("/api/upload", {
+  
+      // 🔥 Convert price strings to numbers (removing currency symbols and formatting)
+      const parsePrice = (price: string) => {
+        return price ? parseFloat(price.replace(/[$,]/g, "")) : 0;
+      };
+  
+      console.log("📤 Uploading book...");
+      console.log("📚 Title:", formData.title);
+      console.log("📖 Author:", formData.author);
+      console.log("📂 Book File (Base64):", base64BookFile?.slice(0, 50) + "...");
+  
+      // ✅ Send request to API with **parsed price values**
+      const res = await fetch("/api/admin/books/upload", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // 🔒 Send authentication token
         },
+        credentials: "include", // ✅ Ensures cookies are sent
         body: JSON.stringify({
           title: formData.title,
           author: formData.author,
           description: formData.description,
           category: formData.category,
-          physicalPrice: formData.physicalPrice,
-          digitalPrice: formData.digitalPrice,
+          physicalPrice: parsePrice(formData.physicalPrice), // 💡 Ensure price is a Float
+          digitalPrice: parsePrice(formData.digitalPrice),   // 💡 Ensure price is a Float
           bookFile: base64BookFile,
           bookCover: base64BookCover,
         }),
       });
-
+  
       const data = await res.json();
       if (res.ok) {
         toast.success("Book uploaded successfully!");
@@ -100,11 +128,13 @@ export default function AddBookPage() {
         throw new Error(data.error || "Upload failed.");
       }
     } catch (error: any) {
+      console.error("❌ Upload Error:", error);
       toast.error(error.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
-  };
+  };  
+  
 
   return (
     <div className="p-6 bg-neutral-100">
@@ -159,8 +189,10 @@ export default function AddBookPage() {
 
           {/* Submit */}
           <div className="flex justify-end mt-8">
-            <Button type="submit" className="bg-black text-white px-5 py-2 hover:bg-gray-900 rounded-lg" disabled={loading}>
-              {loading ? "Uploading..." : "Save Book"}
+            <Button type="submit"
+            style={{ borderRadius: "6px" }}
+            className="bg-black text-white px-5 py-2 hover:bg-gray-900 rounded-lg" disabled={loading}>
+            {loading ? "Uploading..." : "Save Book"}
             </Button>
           </div>
         </form>
@@ -168,3 +200,6 @@ export default function AddBookPage() {
     </div>
   );
 }
+
+
+

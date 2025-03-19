@@ -1,42 +1,83 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/lib/firebaseAdmin";
 import { PrismaClient } from "@prisma/client";
-import { verifyToken } from "@/lib/auth"; // 🔒 New authentication function
+import { verifyToken } from "@/lib/auth";
+import { cookies } from "next/headers";
 
 const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    console.log("📩 Received upload request");
 
-    const token = authHeader.split(" ")[1];
-    const user = await verifyToken(token);
+    // ✅ Retrieve token from cookies
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+
+    if (!token) {
+      console.error("❌ Unauthorized: No token found in cookies");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // ✅ Verify the token
+    const user = verifyToken(token);
+    console.log("🔍 User from Token:", user);
+
     if (!user || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+      console.error("❌ Forbidden: Invalid user role");
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    console.log("📩 Received book upload request from", user.email);
+    console.log("✅ Token verified. Uploading book...");
 
-    const { title, author, bookFile } = await req.json();
+    // ✅ Extract data from request
+    const { title, author, description, category, bookFile, bookCover, bookImages, digitalPrice, physicalPrice, stock } = await req.json();
+
     if (!bookFile) return NextResponse.json({ error: "No file uploaded." }, { status: 400 });
+    if (!category) return NextResponse.json({ error: "Category is required." }, { status: 400 });
 
     const bookId = crypto.randomUUID();
-    const filePath = `books/${bookId}.pdf`;
     const bucket = storage.bucket();
-    const file = bucket.file(filePath);
 
-    console.log("📤 Uploading book to Firebase...");
-    await file.save(Buffer.from(bookFile.split(",")[1], "base64"), {
+    // ✅ Upload book file (PDF)
+    const bookFilePath = `books/${bookId}.pdf`;
+    const bookFileRef = bucket.file(bookFilePath);
+    console.log("📤 Uploading book file...");
+    await bookFileRef.save(Buffer.from(bookFile.split(",")[1], "base64"), {
       contentType: "application/pdf",
     });
 
-    console.log("✅ Book uploaded. Saving in database...");
+    let bookCoverPath = "";
+    if (bookCover) {
+      // ✅ Upload book cover (Image)
+      bookCoverPath = `bookCovers/${bookId}.jpg`;
+      const bookCoverRef = bucket.file(bookCoverPath);
+      console.log("📤 Uploading book cover...");
+      await bookCoverRef.save(Buffer.from(bookCover.split(",")[1], "base64"), {
+        contentType: "image/jpeg",
+      });
+    }
+
+    console.log("✅ Book and cover uploaded. Saving in database...");
+
     const newBook = await prisma.book.create({
-      data: { id: bookId, title, author, bookFile: filePath },
+      data: { 
+        id: bookId, 
+        title, 
+        author, 
+        description: description || "", 
+        category, 
+        bookFile: bookFilePath, // ✅ Store book file path
+        bookCover: bookCoverPath || "", // ✅ Store book cover path
+        digitalPrice: digitalPrice || 0,
+        physicalPrice: physicalPrice || 0, 
+        stock: stock || 0, 
+        images: bookImages?.length ? JSON.stringify(bookImages) : "[]",
+      },
     });
 
     return NextResponse.json({ book: newBook });
+
   } catch (error) {
     console.error("❌ Upload failed:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

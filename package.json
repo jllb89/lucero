@@ -29,6 +29,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^16.4.7",
+    "firebase-admin": "^13.2.0",
     "framer-motion": "^12.5.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.477.0",
