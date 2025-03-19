@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Search, ChevronLeft, ChevronRight, ChevronFirst, ChevronLast } from "lucide-react";
+import { X, Search, ChevronLeft, ChevronRight, ChevronFirst, ChevronLast, MoreVertical } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination";
+import toast from "react-hot-toast"; // 🔥 UI Feedback
 
 interface Order {
   id: string;
@@ -39,6 +41,7 @@ export default function OrdersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalOrders, setTotalOrders] = useState(0);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   const id = useId();
 
   useEffect(() => {
@@ -70,56 +73,83 @@ export default function OrdersPage() {
     CANCELLED: "Cancelled",
   };
 
+  // ✅ Handle status update
+  const handleStatusChange = async (newStatus: string) => {
+    if (selectedOrders.size === 0) return;
+
+    setUpdatingStatus(true);
+    try {
+      await Promise.all(
+        Array.from(selectedOrders).map(async (orderId) => {
+          const res = await fetch(`/api/admin/orders/${orderId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: newStatus }),
+          });
+
+          if (!res.ok) throw new Error(`Failed to update order ${orderId}`);
+        })
+      );
+
+      toast.success(`Updated ${selectedOrders.size} order(s) to ${statusMap[newStatus]}`);
+      
+      // ✅ Refresh orders after status change
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          selectedOrders.has(order.id) ? { ...order, status: newStatus } : order
+        )
+      );
+
+      setSelectedOrders(new Set()); // ✅ Deselect orders after update
+    } catch (error) {
+      console.error("❌ Error updating order status:", error);
+      toast.error("Failed to update order status.");
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
   return (
     <div className="p-6 bg-neutral-100 min-h-screen">
       {/* Breadcrumb */}
       <nav className="text-gray-500 text-sm mb-4">
-        <Link href="/admin" className="hover:underline">
-          Lucero Admin Dashboard
-        </Link>{" "}
-        / Orders
+        <Link href="/admin" className="hover:underline">Lucero Admin Dashboard</Link> / Orders
       </nav>
 
       {/* Orders Table */}
-      <div className="bg-white rounded-xl p-6">
+      <div className="bg-white rounded-xl p-6 relative">
         <h2 className="text-xl font-regular text-black mb-4">Orders</h2>
+
+        {/* 🛠️ Popover Button (Only Visible When Orders Are Selected) */}
+        {selectedOrders.size > 0 && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button className="absolute top-6 right-6 bg-black text-white px-4 py-2 flex items-center space-x-2">
+                <MoreVertical size={18} />
+                <span>Update Status</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Change Status</h4>
+              <Select onValueChange={handleStatusChange} disabled={updatingStatus}>
+                <SelectTrigger className="border-gray-300 rounded-lg focus:ring-gray-400">
+                  <SelectValue placeholder="Select Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(statusMap).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </PopoverContent>
+          </Popover>
+        )}
 
         <div className="overflow-x-auto">
           <Table className="bg-white border-none rounded-xl">
             <TableHeader>
-              {/* Search */}
-              <TableRow className="border-b border-gray-200 hover:bg-transparent">
-                <TableCell colSpan={7} className="p-3 pb-5">
-                  <div className="flex items-center justify-between space-x-4">
-                    <div className="relative w-1/3">
-                      <Label htmlFor={id} className="sr-only">
-                        Search
-                      </Label>
-                      <div className="relative flex items-center">
-                        <Search className="absolute left-3 text-muted-foreground/80 peer-disabled:opacity-50" size={18} />
-                        <Input
-                          id={id}
-                          type="text"
-                          placeholder="  Search by Order ID, User Name, or Email..."
-                          value={search}
-                          onChange={(e) => setSearch(e.target.value)}
-                          style={{ borderRadius: "6px" }}
-                          className="peer w-full pe-9 pl-10 border border-gray-300"
-                        />
-                        {search && (
-                          <X
-                            className="absolute right-3 text-muted-foreground/80 cursor-pointer"
-                            size={18}
-                            onClick={() => setSearch("")}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </TableCell>
-              </TableRow>
-
-              {/* Table Headers */}
               <TableRow>
                 <TableHead>
                   <Checkbox
@@ -167,58 +197,58 @@ export default function OrdersPage() {
             </TableBody>
           </Table>
         </div>
-
         {/* Pagination Fix */}
-        <div className="flex items-center justify-between gap-8 mt-4 whitespace-nowrap w-full">
-          {/* Rows Per Page Selector */}
-          <div className="flex items-center gap-2 whitespace-nowrap">
-            <Label htmlFor={id} className="min-w-max text-xs">Rows per page</Label>
-            <Select value={perPage.toString()} onValueChange={(value) => setPerPage(Number(value))}>
-              <SelectTrigger id={id} className="w-fit" style={{ borderRadius: "6px" }}>
-                <SelectValue placeholder="Select number of results" />
-              </SelectTrigger>
-              <SelectContent>
-                {[5, 10, 25, 50].map((size) => (
-                  <SelectItem key={size} value={size.toString()}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+<div className="flex items-center justify-between gap-8 mt-4 whitespace-nowrap w-full">
+{/* Rows Per Page Selector */}
+<div className="flex items-center gap-2 whitespace-nowrap">
+  <Label htmlFor={id} className="min-w-max text-xs">Rows per page</Label>
+  <Select value={perPage.toString()} onValueChange={(value) => setPerPage(Number(value))}>
+    <SelectTrigger id={id} className="w-fit" style={{ borderRadius: "6px" }}>
+      <SelectValue placeholder="Select number of results" />
+    </SelectTrigger>
+    <SelectContent>
+      {[5, 10, 25, 50].map((size) => (
+        <SelectItem key={size} value={size.toString()}>
+          {size}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
 
-          {/* Page Count Info */}
-          <p className="text-xs text-muted-foreground gap-2 whitespace-nowrap">
-            Showing {Math.min((page - 1) * perPage + 1, totalOrders)} - {Math.min(page * perPage, totalOrders)} of {totalOrders}
-          </p>
+{/* Page Count Info */}
+<p className="text-xs text-muted-foreground gap-2 whitespace-nowrap">
+  Showing {Math.min((page - 1) * perPage + 1, totalOrders)} - {Math.min(page * perPage, totalOrders)} of {totalOrders}
+</p>
 
-          {/* Pagination Buttons */}
-          <Pagination className="ml-auto flex justify-end">
-            <PaginationContent>
-              <PaginationItem>
-                <Button onClick={() => setPage(1)} disabled={page === 1} style={{ borderRadius: "6px" }}>
-                  <ChevronFirst size={16} />
-                </Button>
-              </PaginationItem>
-              <PaginationItem>
-                <Button onClick={() => setPage(page - 1)} disabled={page === 1} style={{ borderRadius: "6px" }}>
-                  <ChevronLeft size={16} />
-                </Button>
-              </PaginationItem>
-              <PaginationItem>
-                <Button onClick={() => setPage(page + 1)} disabled={page >= totalPages} style={{ borderRadius: "6px" }}>
-                  <ChevronRight size={16} />
-                </Button>
-              </PaginationItem>
-              <PaginationItem>
-                <Button onClick={() => setPage(totalPages)} disabled={page >= totalPages} style={{ borderRadius: "6px" }}>
-                  <ChevronLast size={16} />
-                </Button>
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
+{/* Pagination Buttons */}
+<Pagination className="ml-auto flex justify-end">
+  <PaginationContent>
+    <PaginationItem>
+      <Button onClick={() => setPage(1)} disabled={page === 1} style={{ borderRadius: "6px" }}>
+        <ChevronFirst size={16} />
+      </Button>
+    </PaginationItem>
+    <PaginationItem>
+      <Button onClick={() => setPage(page - 1)} disabled={page === 1} style={{ borderRadius: "6px" }}>
+        <ChevronLeft size={16} />
+      </Button>
+    </PaginationItem>
+    <PaginationItem>
+      <Button onClick={() => setPage(page + 1)} disabled={page >= totalPages} style={{ borderRadius: "6px" }}>
+        <ChevronRight size={16} />
+      </Button>
+    </PaginationItem>
+    <PaginationItem>
+      <Button onClick={() => setPage(totalPages)} disabled={page >= totalPages} style={{ borderRadius: "6px" }}>
+        <ChevronLast size={16} />
+      </Button>
+    </PaginationItem>
+  </PaginationContent>
+</Pagination>
       </div>
     </div>
+    </div>
+
   );
 }

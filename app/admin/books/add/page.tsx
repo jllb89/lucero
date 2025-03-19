@@ -140,7 +140,7 @@ export default function AddBookPage() {
     <div className="p-6 bg-neutral-100">
       <nav className="text-gray-500 text-sm mb-4">
         <Link href="/admin" className="hover:underline">Lucero Admin Dashboard</Link> /
-        <Link href="/admin/books" className="hover:underline">Books</Link> / Add New Book
+        <Link href="/admin/books" className="hover:underline"> Books</Link> / Add New Book
       </nav>
 
       <div className="bg-white p-6 rounded-xl w-full max-w-3xl space-y-10 overflow-y-auto max-h-[91vh]">
