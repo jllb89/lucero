@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { verifyToken } from "@/lib/auth";
-import { cookies } from "next/headers";
+import { cookies } from "next/headers"; // ✅ Must be used asynchronously
 
 const prisma = new PrismaClient();
 
-// ✅ Update Order Status (PUT)
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+// ✅ Correct API Route Fix
+export async function PUT(req: NextRequest, context: { params: { id: string } }) {
   try {
-    const orderId = params.id;
+    // ✅ Correctly await params (per Next.js 15 documentation)
+    const { id: orderId } = await context.params;
 
-    // ✅ Retrieve token from cookies
-    const cookieStore = cookies();
+    if (!orderId) {
+      return NextResponse.json({ error: "Missing order ID" }, { status: 400 });
+    }
+
+    // ✅ Correctly await cookies() (per Next.js 15 documentation)
+    const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
 
     if (!token) {
@@ -25,7 +30,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     // ✅ Extract updated order status
-    const { status } = await req.json();
+    const body = await req.json();
+    const { status } = body;
     const validStatuses = ["PENDING", "COMPLETED", "CANCELLED"];
 
     if (!validStatuses.includes(status)) {
