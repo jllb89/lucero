@@ -4,10 +4,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") // ✅ Default to Prisma Accelerate
-  directUrl = env("DIRECT_URL") // ✅ Use the direct URL from env variables
+  url      = env("DATABASE_URL")  // ✅ Use database URL with timeouts
+  directUrl = env("DIRECT_URL")   // ✅ Use the direct URL from env variables
 }
-
 
 model User {
   id          String   @id @default(uuid())
@@ -26,18 +25,23 @@ model User {
 
 model Book {
   id            String      @id @default(uuid())
-  title         String
+  title         String      @unique
   author        String
   description   String?
-  images        Json
+  images        Json        @default("[]")
   createdAt     DateTime    @default(now())
-  digitalPrice  Float?
-  physicalPrice Float?
-  stock         Int?
+  digitalPrice  Float?      @default(0)
+  physicalPrice Float?      @default(0)
+  stock         Int?        @default(0)
   bookFile      String?
   bookCover     String?  
   category      Category
+  active        Boolean     @default(true)  // ✅ Active flag added
   orderItems    OrderItem[]
+
+  @@index([title])
+  @@index([category])
+  @@index([createdAt])
 }
 
 model OrderItem {
