@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Search, ChevronLeft, ChevronRight, ChevronFirst, ChevronLast, Plus } from "lucide-react";
+import { X, Search, ChevronLeft, ChevronRight, ChevronFirst, ChevronLast, Plus, Trash } from "lucide-react";
 import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast"; // ✅ UI Feedback
 
 interface Book {
   id: string;
@@ -61,6 +62,30 @@ export default function BooksPage() {
     });
   };
 
+  const deleteSelectedBooks = async () => {
+    if (!selectedBooks.size) return;
+
+    const confirmDelete = window.confirm(`Are you sure you want to delete ${selectedBooks.size} book(s)?`);
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch(`/api/admin/books/delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookIds: Array.from(selectedBooks) }),
+      });
+
+      if (!res.ok) throw new Error("Failed to delete books");
+
+      toast.success("Books deleted successfully!");
+      setBooks((prev) => prev.filter((book) => !selectedBooks.has(book.id)));
+      setSelectedBooks(new Set());
+    } catch (error) {
+      console.error("❌ Error deleting books:", error);
+      toast.error("Error deleting books.");
+    }
+  };
+
   return (
     <div className="p-6 bg-neutral-100 min-h-screen">
       {/* Breadcrumb */}
@@ -68,7 +93,6 @@ export default function BooksPage() {
         <Link href="/admin" className="hover:underline">Lucero Admin Dashboard</Link> / Books
       </nav>
 
-      {/* Books Table */}
       <div className="bg-white p-6" style={{ borderRadius: "6px" }}>
         <h2 className="text-xl font-regular text-black mb-6">Books</h2>
 
@@ -93,14 +117,28 @@ export default function BooksPage() {
             </div>
           </div>
 
-          {/* Add Book Button (Now Navigates to /books/new) */}
-          <Button
-            style={{ borderRadius: "6px" }}
-            className="bg-black text-white px-4 py-2 hover:bg-gray-900 transition-all flex items-center"
-            onClick={() => router.push("/admin/books/add")}
-          >
-            <Plus className="w-5 h-5 mr-2" /> Add Book
-          </Button>
+          <div className="flex items-center gap-4">
+            {/* Delete Button (Only visible if books are selected) */}
+            {selectedBooks.size > 0 && (
+              <Button
+              className="bg-white text-black border border-black px-4 py-2 rounded-lg hover:bg-gray-100 transition-all flex items-center"
+              style={{ borderRadius: "6px"}}
+              onClick={deleteSelectedBooks}
+            >
+              <Trash className="w-5 h-5 mr-2" /> Delete Selected
+            </Button>
+            
+            )}
+
+            {/* Add Book Button */}
+            <Button
+              style={{ borderRadius: "6px" }}
+              className="bg-black text-white px-4 py-2 hover:bg-gray-900 transition-all flex items-center"
+              onClick={() => router.push("/admin/books/add")}
+            >
+              <Plus className="w-5 h-5 mr-2" /> Add Book
+            </Button>
+          </div>
         </div>
 
         <Table>
@@ -134,7 +172,12 @@ export default function BooksPage() {
                       className="cursor-pointer h-5 w-5 align-middle"
                     />
                   </TableCell>
-                  <TableCell>{book.title}</TableCell>
+                  <TableCell>
+                  <Link href={`/admin/books/${book.id}`} className="underline text-black">
+  {book.title}
+</Link>
+
+                  </TableCell>
                   <TableCell>${book.digitalPrice?.toFixed(2) || "—"}</TableCell>
                   <TableCell>${book.physicalPrice?.toFixed(2) || "—"}</TableCell>
                   <TableCell>{new Date(book.createdAt).toLocaleDateString()}</TableCell>
