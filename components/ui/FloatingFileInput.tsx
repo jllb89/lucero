@@ -2,27 +2,28 @@
 
 import { useId } from "react";
 
-export function FileInput({ label, name, accept, multiple, onChange }: { label: string; name: string; accept: string; multiple?: boolean; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
+export function FloatingFileInput({ label, name, accept, multiple, onChange }: any) {
   const id = useId();
 
   return (
     <div className="space-y-2 max-w-[300px]">
       {/* ✅ Styled Label */}
-      <label htmlFor={id} className="text-sm font-light text-gray-500">
+      <label htmlFor={id} className="block text-sm text-gray-500 font-light">
         {label}
       </label>
-
+      
       {/* ✅ Fully Rounded File Input */}
       <div
-        className="relative flex items-center border border-gray-300 rounded-lg h-10 px-3 bg-white"
+        className="relative flex items-center border border-gray-300 rounded-lg px-3 py-2 h-10 overflow-hidden bg-white"
         style={{
-          borderRadius: "10px", // ✅ Ensures full roundness
+          borderRadius: "8px", // ✅ Ensures full roundness
           height: "40px", // ✅ Matches text inputs
           borderColor: "#d1d5db", // ✅ Consistent border
           backgroundColor: "white", // ✅ Prevents unwanted blending
+          overflow: "hidden", // ✅ Prevents edge-cutting
         }}
       >
-        {/* 🔥 Invisible File Input with rounded corners */}
+        {/* 🔥 Invisible File Input with forced roundness */}
         <input
           id={id}
           name={name}
@@ -31,7 +32,10 @@ export function FileInput({ label, name, accept, multiple, onChange }: { label: 
           multiple={multiple}
           onChange={onChange}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none"
-          style={{ borderRadius: "10px" }} // ✅ Ensures roundness inside
+          style={{
+            borderRadius: "8px", // ✅ Ensures internal roundness
+            height: "100%",
+          }}
         />
 
         <span className="text-gray-500 text-sm font-light">Choose File</span>
