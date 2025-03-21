@@ -32,7 +32,13 @@ interface ApiResponse {
   currentPage: number;
 }
 
-const validStatuses = ["PENDING", "COMPLETED", "CANCELLED"];
+const statusMap: Record<string, string> = {
+  PENDING: "Pending",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+const validStatuses = Object.keys(statusMap);
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -45,65 +51,59 @@ export default function OrdersPage() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const id = useId();
 
-    // ✅ Define fetchOrders inside the component
-    const fetchOrders = async () => {
-      try {
-        const res = await fetch(`/api/admin/orders?page=${page}&perPage=${perPage}&search=${search}`);
-        const data: ApiResponse = await res.json();
-        setOrders(data.orders);
-        setTotalPages(data.totalPages);
-        setTotalOrders(data.totalOrders);
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-      }
-    };
+  // ✅ Fetch Orders Function
+  const fetchOrders = async () => {
+    try {
+      const res = await fetch(`/api/admin/orders?page=${page}&perPage=${perPage}&search=${search}`);
+      const data: ApiResponse = await res.json();
+      setOrders(data.orders);
+      setTotalPages(data.totalPages);
+      setTotalOrders(data.totalOrders);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    }
+  };
 
-    useEffect(() => {
-      fetchOrders();
-    }, [page, perPage, search]);
-  
-    const toggleOrderSelection = (orderId: string) => {
-      setSelectedOrders((prev) => {
-        const updated = new Set(prev);
-        updated.has(orderId) ? updated.delete(orderId) : updated.add(orderId);
-        return updated;
-      });
-    };
+  useEffect(() => {
+    fetchOrders();
+  }, [page, perPage, search]);
 
-    const handleStatusChange = async (status: string) => {
-      if (selectedOrders.size === 0) return;
-  
-      setUpdatingStatus(true);
-      try {
-        await Promise.all(
-          Array.from(selectedOrders).map(async (orderId) => {
-            const response = await fetch(`/api/admin/orders/${orderId}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ status }),
-            });
-  
-            if (!response.ok) {
-              throw new Error("Failed to update order status");
-            }
-          })
-        );
-  
-        toast.success("Order status updated successfully!");
-        setSelectedOrders(new Set()); // ✅ Clear selection after update
-        await fetchOrders(); // ✅ Refresh orders list after updating order status
-      } catch (error) {
-        console.error("Error updating order status:", error);
-        toast.error("Failed to update order status.");
-      } finally {
-        setUpdatingStatus(false);
-      }
-    };
+  const toggleOrderSelection = (orderId: string) => {
+    setSelectedOrders((prev) => {
+      const updated = new Set(prev);
+      updated.has(orderId) ? updated.delete(orderId) : updated.add(orderId);
+      return updated;
+    });
+  };
 
-  const statusMap: Record<string, string> = {
-    PENDING: "Pending",
-    COMPLETED: "Completed",
-    CANCELLED: "Cancelled",
+  const handleStatusChange = async (status: string) => {
+    if (selectedOrders.size === 0) return;
+
+    setUpdatingStatus(true);
+    try {
+      await Promise.all(
+        Array.from(selectedOrders).map(async (orderId) => {
+          const response = await fetch(`/api/admin/orders/${orderId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to update order status");
+          }
+        })
+      );
+
+      toast.success("Order status updated successfully!");
+      setSelectedOrders(new Set()); // ✅ Clear selection after update
+      await fetchOrders(); // ✅ Refresh orders list after updating order status
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      toast.error("Failed to update order status.");
+    } finally {
+      setUpdatingStatus(false);
+    }
   };
 
   return (
@@ -113,17 +113,17 @@ export default function OrdersPage() {
         <Link href="/admin" className="hover:underline">Lucero Admin Dashboard</Link> / Orders
       </nav>
   
-      {/* Orders Table */}
-      <div className="bg-white rounded-xl p-6 relative">
+       {/* Orders Table */}
+       <div className="bg-white rounded-xl p-6 relative">
         <h2 className="text-xl font-regular text-black mb-4">Orders</h2>
-  
+
         <div className="overflow-x-auto">
           <Table className="bg-white border-none rounded-xl">
             <TableHeader>
               {/* Search & Status Selector Row */}
               <TableRow className="border-b border-gray-200 hover:bg-transparent">
-                <TableCell colSpan={7} className="p-3 pb-5">
-                  <div className="flex items-center justify-between space-x-4">
+                <TableCell colSpan={9} className="p-3 pb-5">
+                  <div className="flex items-center justify-between">
                     {/* Search Input */}
                     <div className="relative w-1/3">
                       <Label htmlFor={id} className="sr-only">Search</Label>
@@ -143,17 +143,17 @@ export default function OrdersPage() {
                         )}
                       </div>
                     </div>
-  
-                    {/* Status Selector (Only appears when orders are selected) */}
+
+                    {/* Status Selector (Only appears when orders are selected, aligned to the right) */}
                     {selectedOrders.size > 0 && (
                       <Select onValueChange={handleStatusChange} disabled={updatingStatus}>
-                        <SelectTrigger className="border-gray-300 rounded-lg focus:ring-gray-400">
+                        <SelectTrigger className="border-gray-300 rounded-lg focus:ring-gray-400 animate-fade-in">
                           <SelectValue placeholder="Select Status" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="absolute z-50 bg-white border border-gray-300 rounded-lg shadow-md animate-fade-in">
                           {validStatuses.map((status) => (
                             <SelectItem key={status} value={status}>
-                              {status}
+                              {statusMap[status]} {/* ✅ Displays mapped names */}
                             </SelectItem>
                           ))}
                         </SelectContent>

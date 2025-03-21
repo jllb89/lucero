@@ -28,7 +28,7 @@ interface Order {
 
 // Define columns
 const columns: ColumnDef<Order>[] = [
-  {
+/*   {
     id: "select",
     header: ({ table }) => (
       <Checkbox
@@ -46,12 +46,12 @@ const columns: ColumnDef<Order>[] = [
         aria-label="Select row"
       />
     ),
-  },
+  }, */
   {
     header: "Order ID",
     accessorKey: "id",
     cell: ({ row }) => (
-      <Link href="#" className="text-black underline hover:no-underline">
+      <Link href="/admin/orders" className="text-black underline hover:no-underline">
         {row.getValue("id")}
       </Link>
     ),
@@ -200,7 +200,7 @@ export default function Dashboard() {
           </TableBody>
           <TableFooter>
             <TableRow>
-              <TableCell colSpan={5}>Total de ventas de órdenes recientes:</TableCell>
+              <TableCell colSpan={4}>Total de ventas de órdenes recientes:</TableCell>
               <TableCell>
                 {formatCurrency(
                   dashboardData.recentOrders.reduce((total, order) => total + order.total, 0)

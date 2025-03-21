@@ -9,7 +9,7 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash("admin123", 10);
 
-  // Ensure ADMIN user exists
+  // ✅ Ensure ADMIN user exists
   const admin = await prisma.user.upsert({
     where: { email: "lcastr60@gmail.com" },
     update: {},
@@ -24,7 +24,7 @@ async function main() {
     },
   });
 
-  // Ensure SUPER_ADMIN user exists
+  // ✅ Ensure SUPER_ADMIN user exists
   const superAdmin = await prisma.user.upsert({
     where: { email: "lopezb.jl@gmail.com" },
     update: {},
@@ -41,7 +41,7 @@ async function main() {
 
   console.log("✅ Admin users seeded!");
 
-  // Generate 10 users
+  // ✅ Generate 10 users
   const users = [];
   for (let i = 1; i <= 10; i++) {
     users.push(
@@ -64,13 +64,13 @@ async function main() {
   await Promise.all(users);
   console.log("✅ 10 users seeded!");
 
-  // Seed Books
+  // ✅ Seed Books
   const books = [];
   for (let i = 1; i <= 10; i++) {
     books.push(
       prisma.book.create({
         data: {
-          id: `book-${i}`,
+          id: uuidv4(),
           title: `Book Title ${i}`,
           author: `Author ${i}`,
           description: `Description for Book ${i}.`,
@@ -89,28 +89,41 @@ async function main() {
   await Promise.all(books);
   console.log("✅ 10 books seeded!");
 
-  // Generate 10 orders
+  // ✅ Retrieve all books from DB
+  const allBooks = await prisma.book.findMany();
+  
+  // ✅ Generate 10 orders and assign books
   const orders = [];
   for (let i = 1; i <= 10; i++) {
     const total = parseFloat((Math.random() * 100).toFixed(2));
     const user = await prisma.user.findFirst({ where: { email: `user${i}@example.com` } });
 
     if (user) {
-      orders.push(
-        prisma.order.create({
-          data: {
-            userId: user.id,
-            total,
-            createdAt: new Date(),
-          },
-        })
-      );
+      const newOrder = await prisma.order.create({
+        data: {
+          userId: user.id,
+          total,
+          createdAt: new Date(),
+        },
+      });
+
+      // ✅ Assign 1-3 random books to this order
+      const randomBooks = allBooks
+        .sort(() => 0.5 - Math.random()) // Shuffle books
+        .slice(0, Math.floor(Math.random() * 3) + 1); // Pick 1-3 books
+
+      await prisma.orderItem.createMany({
+        data: randomBooks.map((book: { id: string }) => ({
+          orderId: newOrder.id,
+          bookId: book.id,
+        })),
+      });
+
+      console.log(`📚 Order ${newOrder.id} assigned ${randomBooks.length} books.`);
     }
   }
 
-  await Promise.all(orders);
-  console.log("✅ 10 orders seeded!");
-
+  console.log("✅ 10 orders with books seeded!");
   console.log("🎉 Seeding complete!");
 }
 

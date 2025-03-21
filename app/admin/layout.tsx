@@ -10,7 +10,7 @@ const adminLinks = [
     { label: "Usuarios", href: "/admin/users", icon: Users },
     { label: "Órdenes", href: "/admin/orders", icon: ShoppingCart },
     { label: "Libros", href: "/admin/books", icon: Package },
-    { label: "Ajustes", href: "/admin/settings", icon: Settings },
+/*     { label: "Ajustes", href: "/admin/settings", icon: Settings }, */
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -167,7 +167,12 @@ export default function UsersPage() {
   />
 </TableCell>
 
-                  <TableCell>{user.name || "—"}</TableCell>
+<TableCell>
+  <Link href={`/admin/users/${user.id}`} className="text-black underline hover:no-underline">
+    {user.name || "—"}
+  </Link>
+</TableCell>
+
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.phoneNumber}</TableCell>
                   <TableCell>{user.address || "—"}</TableCell>
