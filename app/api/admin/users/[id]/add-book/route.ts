@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest, context: { params: { id: string } }) {
   try {
-    const { id: userId } = await context.params; // ✅ await context.params
+    const { id: userId } = await context.params;
     const body = await req.json();
     const { bookId } = body;
 
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest, context: { params: { id: string } }
       return NextResponse.json({ error: "Missing userId or bookId" }, { status: 400 });
     }
 
-    const cookieStore = await cookies(); // ✅ await cookies()
+    const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
 
     if (!token) {
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest, context: { params: { id: string } }
     }
 
     const user = verifyToken(token);
-    if (!user || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+    if (!user || typeof user === "string" || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -63,6 +63,22 @@ export async function POST(req: NextRequest, context: { params: { id: string } }
         bookId,
       },
     });
+
+    // ✅ Send notification email
+    const grantedUser = await prisma.user.findUnique({ where: { id: userId } });
+    const book = await prisma.book.findUnique({ where: { id: bookId } });
+
+    if (grantedUser?.email && book?.title) {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mail/book-granted`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: grantedUser.email,
+          name: grantedUser.name,
+          bookTitle: book.title,
+        }),
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

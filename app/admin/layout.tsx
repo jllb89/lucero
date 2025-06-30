@@ -1,7 +1,8 @@
 "use client";
+
 import { usePathname } from "next/navigation";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
-import { LayoutDashboard, Users, Package, ShoppingCart, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Package, ShoppingCart, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Toaster } from "react-hot-toast";
 
@@ -10,7 +11,6 @@ const adminLinks = [
     { label: "Usuarios", href: "/admin/users", icon: Users },
     { label: "Órdenes", href: "/admin/orders", icon: ShoppingCart },
     { label: "Libros", href: "/admin/books", icon: Package },
-/*     { label: "Ajustes", href: "/admin/settings", icon: Settings }, */
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -52,23 +52,42 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             }}
                             className="flex items-center"
                         />
-                        <SidebarLink
-                            link={{
-                                label: "Logout",
-                                href: "/logout",
-                                icon: <LogOut className="h-5 w-5 flex-shrink-0 text-black" />,
+
+                        <div
+                            className="flex items-center cursor-pointer"
+                            onClick={async (e: React.MouseEvent) => {
+                                e.preventDefault();
+                                try {
+                                    const res = await fetch("/api/auth/logout", { method: "POST" });
+                                    if (res.ok) {
+                                        window.location.href = "/login";
+                                    } else {
+                                        console.error("❌ Logout failed");
+                                    }
+                                } catch (err) {
+                                    console.error("❌ Logout error:", err);
+                                }
                             }}
-                            className="flex items-center"
-                        />
+                        >
+                            <SidebarLink
+                                link={{
+                                    label: "Logout",
+                                    href: "#",
+                                    icon: <LogOut className="h-5 w-5 flex-shrink-0 text-black" />,
+                                }}
+                                className="flex items-center"
+                            />
+                        </div>
+
                     </div>
                 </SidebarBody>
             </Sidebar>
 
-            {/* Main Content - Fixed Scrolling Issue */}
+            {/* Main Content */}
             <div className="flex-1 p-6 overflow-y-auto h-full">
                 {children}
                 <Toaster position="top-right" />
-                </div>
+            </div>
         </div>
     );
 }

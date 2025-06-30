@@ -1,21 +1,18 @@
-// /api/auth/me/route.ts
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 const prisma = new PrismaClient();
 const SECRET = process.env.JWT_SECRET || "secret_key";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const token = authHeader.split(" ")[1];
     const decoded: any = jwt.verify(token, SECRET);
 
     const user = await prisma.user.findUnique({
@@ -35,7 +32,6 @@ export async function GET() {
                 id: true,
                 book: {
                   select: {
-                    id: true,
                     title: true,
                     digitalPrice: true,
                     physicalPrice: true,
@@ -48,13 +44,8 @@ export async function GET() {
       },
     });
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
     return NextResponse.json(user);
   } catch (error) {
-    console.error("❌ /api/auth/me failed:", error);
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }

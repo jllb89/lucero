@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, context: { params: { id: string } })
 
     // ✅ Verify token
     const user = verifyToken(token);
-    if (!user || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+    if (!user || typeof user !== "object" || !("role" in user) || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -64,6 +64,38 @@ export async function GET(req: NextRequest, context: { params: { id: string } })
     return NextResponse.json({ ...userDetails, books }); // ✅ Return books along with user details
   } catch (error) {
     console.error("❌ Failed to fetch user:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+// Add this below your GET handler
+
+export async function PUT(req: NextRequest, context: { params: { id: string } }) {
+  try {
+    const { id: userId } = context.params;
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = verifyToken(token);
+    if (!user || typeof user !== "object" || !("role" in user) || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const updates = await req.json();
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updates,
+    });
+
+    console.log(`✅ Updated user ${userId}`);
+    return NextResponse.json({ success: true, user: updatedUser }); // ✅ Returns valid JSON
+  } catch (error) {
+    console.error("❌ Failed to update user:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

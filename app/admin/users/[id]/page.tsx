@@ -21,7 +21,7 @@ export default function EditUserPage() {
     address: "",
   });
 
-  const [userBooks, setUserBooks] = useState([]);
+  const [userBooks, setUserBooks] = useState<{ id: string; label: string }[]>([]);
   const [availableBooks, setAvailableBooks] = useState([]);
 
   const roles = [
@@ -61,7 +61,7 @@ export default function EditUserPage() {
         }
 
         setAvailableBooks(
-          booksData.books.map((book) => ({
+          booksData.books.map((book: { id: string; title: string }) => ({
             id: book.id,
             label: book.title,
           }))
@@ -76,23 +76,23 @@ export default function EditUserPage() {
   }, [id]);
 
   // Other logic (form handling, tag management, etc.) remains unchanged
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name === "phoneNumber" && value.length > 10) return;
     setUserData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleBlur = (e) => {
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     if (e.target.name === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) {
       toast.error("Invalid email format");
     }
   };
 
-  const handleRoleChange = (role) => {
+  const handleRoleChange = (role: string) => {
     setUserData((prev) => ({ ...prev, role }));
   };
 
-  const addBookAccess = async (tag) => {
+  const addBookAccess = async (tag: { id: string; label: string }) => {
     try {
       const res = await fetch(`/api/admin/users/${id}/add-book`, {
         method: "POST",
@@ -113,7 +113,7 @@ export default function EditUserPage() {
     }
   };
 
-  const removeBookAccess = async (tagId) => {
+  const removeBookAccess = async (tagId: string) => {
     try {
       const res = await fetch(`/api/admin/users/${id}/remove-book`, {
         method: "DELETE",
@@ -131,13 +131,14 @@ export default function EditUserPage() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+  
     if (!userData.name || !userData.email || !userData.role) {
       toast.error("Please fill in all required fields.");
       return;
     }
-
+  
     setLoading(true);
     try {
       const res = await fetch(`/api/admin/users/${id}`, {
@@ -145,21 +146,28 @@ export default function EditUserPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
       });
+  
+      let data: { error?: string } = {};
+      try {
+        data = await res.json(); // ✅ Try parsing only if valid
+      } catch (err) {
+        console.warn("⚠️ Response body was empty or invalid JSON");
+      }
 
-      const data = await res.json();
-      if (res.ok) {
-        toast.success("User updated successfully!");
-        router.push("/admin/users");
-      } else {
+      if (!res.ok) {
         throw new Error(data.error || "Update failed.");
       }
-    } catch (error) {
+  
+      toast.success("User updated successfully!");
+      router.push("/admin/users");
+    } catch (error: any) {
       console.error("❌ Update Error:", error);
       toast.error(error.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
   };
+  
 
   return (
     <div className="p-6 bg-neutral-100">

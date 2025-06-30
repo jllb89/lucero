@@ -1,38 +1,51 @@
-// middleware.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { verify } from './lib/jwt';
+import { NextRequest, NextResponse } from "next/server";
+import { verify } from "./lib/jwt";
 
 export const config = {
-  matcher: '/admin/:path*',
+  matcher: ["/admin/:path*", "/dashboard/:path*"], // ✅ Add /dashboard
 };
 
 export async function middleware(req: NextRequest) {
-  const token = req.cookies.get('token')?.value;
-  console.log('🍪 Token from cookie (Middleware):', token);
+  const token = req.cookies.get("token")?.value;
+  const url = req.nextUrl.pathname;
 
-  if (req.nextUrl.pathname.startsWith('/admin/login')) {
+  console.log("🍪 Token from cookie (Middleware):", token);
+
+  // Allow /admin/login and /login pages through
+  if (url.startsWith("/admin/login") || url.startsWith("/login")) {
     return NextResponse.next();
   }
 
-  if (req.nextUrl.pathname.startsWith('/admin')) {
-    if (!token) {
-      console.log('🚨 No token found. Redirecting to /admin/login');
-      return NextResponse.redirect(new URL('/admin/login', req.url));
-    }
+  if (!token) {
+    console.log("🚨 No token. Redirecting.");
+    const redirectPath = url.startsWith("/admin") ? "/admin/login" : "/login";
+    return NextResponse.redirect(new URL(redirectPath, req.url));
+  }
 
-    try {
-      const decoded: any = await verify(token, process.env.JWT_SECRET!);
-      console.log('✅ Token verified. User role:', decoded.role);
+  try {
+    const decoded: any = await verify(token, process.env.JWT_SECRET!);
+    console.log("✅ Token verified. Role:", decoded.role);
 
-      if (decoded.role !== 'ADMIN' && decoded.role !== 'SUPER_ADMIN') {
-        console.log('⛔ Unauthorized role. Redirecting to /admin/login');
-        return NextResponse.redirect(new URL('/admin/login', req.url));
+    // Admin route protection
+    if (url.startsWith("/admin")) {
+      if (decoded.role !== "ADMIN" && decoded.role !== "SUPER_ADMIN") {
+        console.log("⛔ Unauthorized role for /admin");
+        return NextResponse.redirect(new URL("/admin/login", req.url));
       }
-    } catch (error) {
-      console.log('❌ Invalid token. Redirecting to /admin/login');
-      console.error(error);
-      return NextResponse.redirect(new URL('/admin/login', req.url));
     }
+
+    // Dashboard route protection
+    if (url.startsWith("/dashboard")) {
+      if (decoded.role !== "USER") {
+        console.log("⛔ Unauthorized role for /dashboard");
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+    }
+  } catch (error) {
+    console.log("❌ Token verification failed.");
+    console.error(error);
+    const redirectPath = url.startsWith("/admin") ? "/admin/login" : "/login";
+    return NextResponse.redirect(new URL(redirectPath, req.url));
   }
 
   return NextResponse.next();

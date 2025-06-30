@@ -23,10 +23,10 @@ export async function POST(req: NextRequest) {
     const user = verifyToken(token);
     console.log("🔍 User from Token:", user);
 
-    if (!user || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+    if (!user || typeof user === "string" || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
       console.error("❌ Forbidden: Invalid user role");
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    }    
 
     console.log("✅ Token verified. Uploading book...");
 

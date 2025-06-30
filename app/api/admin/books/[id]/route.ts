@@ -20,7 +20,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     // ✅ Verify token
     const user = verifyToken(token);
-    if (!user || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+    if (!user || typeof user !== "object" || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     console.log(`📚 Title: ${book.title}`);
     console.log(`📖 File Path: ${book.bookFile}`);
     console.log(`🖼️ Cover Path: ${book.bookCover}`);
-    console.log(`📸 Images: ${book.bookImages}`);
+    console.log(`📸 Images: ${book.images}`);
 
     return NextResponse.json(book);
   } catch (error) {
@@ -65,7 +65,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     // ✅ Verify token
     const user = verifyToken(token);
-    if (!user || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+    if (!user || typeof user !== "object" || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

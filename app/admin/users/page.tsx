@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Search, ChevronLeft, ChevronRight, ChevronFirst, ChevronLast } from "lucide-react";
 import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination";
+import { useRouter } from "next/navigation";
 
 interface User {
   id: string;
@@ -38,6 +39,7 @@ export default function UsersPage() {
   const [totalUsers, setTotalUsers] = useState(0);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const id = useId();
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchUsers() {
@@ -127,7 +129,8 @@ export default function UsersPage() {
                   </div>
 
                   {/* Add User Button */}
-                  <Button style={{ borderRadius: "6px" }} className="bg-black text-white px-4 py-2 hover:bg-black">
+                  <Button style={{ borderRadius: "6px" }} className="bg-black text-white px-4 py-2 hover:bg-black" onClick={() => router.push("/admin/users/add")}
+                  >
                     + Add User
                   </Button>
                 </div>

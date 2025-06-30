@@ -3,22 +3,24 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")  // ✅ Use database URL with timeouts
-  directUrl = env("DIRECT_URL")   // ✅ Use the direct URL from env variables
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
 }
 
 model User {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  name        String?
-  password    String
-  role        Role     @default(USER)
-  phoneNumber String
-  address     String?
-  createdAt   DateTime @default(now())
-  devices     Device[]
-  orders      Order[]
+  id               String   @id @default(uuid())
+  email            String   @unique
+  name             String?
+  password         String
+  role             Role     @default(USER)
+  phoneNumber      String
+  address          String?
+  createdAt        DateTime @default(now())
+  resetToken       String?  // 🔑 Used for /set-password and recovery
+  stripeCustomerId String?  @unique // 🔗 Stripe customer ID
+  devices          Device[]
+  orders           Order[]
 
   @@map("User")
 }
@@ -34,9 +36,9 @@ model Book {
   physicalPrice Float?      @default(0)
   stock         Int?        @default(0)
   bookFile      String?
-  bookCover     String?  
+  bookCover     String?
   category      Category
-  active        Boolean     @default(true)  // ✅ Active flag added
+  active        Boolean     @default(true)
   orderItems    OrderItem[]
 
   @@index([title])
@@ -53,13 +55,17 @@ model OrderItem {
 }
 
 model Order {
-  id         String      @id @default(uuid())
-  userId     String
-  total      Float
-  createdAt  DateTime    @default(now())
-  status     OrderStatus @default(PENDING)
-  user       User        @relation(fields: [userId], references: [id])
-  orderItems OrderItem[]
+  id              String      @id @default(uuid())
+  userId          String
+  total           Float
+  createdAt       DateTime    @default(now())
+  status          OrderStatus @default(PENDING)
+  shippingAddress String?     // 📦 Required for physical books
+  isDigitalOnly   Boolean     @default(false)
+  email           String?     // 📧 Useful for guest purchases
+  source          String?     // 🧾 Optional: stripe, admin, etc.
+  user            User        @relation(fields: [userId], references: [id])
+  orderItems      OrderItem[]
 }
 
 model Device {

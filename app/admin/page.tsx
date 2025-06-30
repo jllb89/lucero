@@ -73,7 +73,7 @@ const columns: ColumnDef<Order>[] = [
   
       return (
         <Badge className="bg-black text-white">
-          {statusMap[row.getValue("status")] || row.getValue("status")}
+          {statusMap[String(row.getValue("status"))] || String(row.getValue("status"))}
         </Badge>
       );
     },

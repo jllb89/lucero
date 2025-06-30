@@ -175,9 +175,9 @@ export default function AddBookPage() {
           {/* Book Files */}
           <div className="space-y-6">
             <h3 className="text-lg font-light text-gray-800">Book Files</h3>
-            <FloatingFileInput label="Book Cover" name="bookCover" accept="image/*" onChange={(file) => handleFileChange(file, "bookCover")} />
-            <FloatingFileInput label="Book File" name="bookFile" accept=".pdf,.epub,.mobi" onChange={(file) => handleFileChange(file, "bookFile")} />
-            <FloatingFileInput label="Book Images" name="bookImages" accept="image/*" multiple onChange={(file) => handleFileChange(file, "bookImages")} />
+            <FloatingFileInput label="Book Cover" name="bookCover" accept="image/*" onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange(e)} />
+            <FloatingFileInput label="Book File" name="bookFile" accept=".pdf,.epub,.mobi" onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange(e)} />
+            <FloatingFileInput label="Book Images" name="bookImages" accept="image/*" multiple onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange(e)} />
           </div>
 
           {/* Book Pricing */}
