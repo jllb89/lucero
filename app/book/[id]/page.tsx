@@ -2,21 +2,24 @@
 'use client';
 
 import { useParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useAuthorizedPdf } from '@/hooks/useAuthorizedPdf';
 
-/* UI components */
 import { MessageLoading } from '@/components/ui/message-loading';
-import ErrorModal from '@/components/ErrorModal';   // adjust if stored elsewhere
-import PdfViewer from '@/components/PdfViewer';     // adjust if stored elsewhere
+import ErrorModal from '@/components/ui/ErrorModal';
+
+/* ── Lazy-load the named export “Component” and disable SSR ── */
+const PdfViewer = dynamic(
+  () => import('@/components/ui/pdf-viewer').then((m) => m.Component),
+  { ssr: false }
+);
 
 export default function ReaderPage() {
   const { id } = useParams<{ id: string }>();
   const { url, error } = useAuthorizedPdf(id);
 
-  /* ─── Error state ─── */
   if (error) return <ErrorModal message={error} />;
 
-  /* ─── Loading state ─── */
   if (!url) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -25,6 +28,5 @@ export default function ReaderPage() {
     );
   }
 
-  /* ─── Success state ─── */
-  return <PdfViewer src={url} />;
+  return <PdfViewer url={url} />;
 }

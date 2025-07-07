@@ -1,5 +1,6 @@
 import "@/styles/global.css";
 import "@/styles/animations.css";
+import "@/utils/polyfills";   
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

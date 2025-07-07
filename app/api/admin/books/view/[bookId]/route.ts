@@ -1,4 +1,3 @@
-// app/api/admin/books/view/[bookId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { cookies } from "next/headers";
@@ -10,66 +9,62 @@ const MAX_DEVICES = 3;
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { bookId: string } }
+  context: { params: Promise<{ bookId: string }> }
 ) {
   try {
-    const bookId = params.bookId;
+    /* params are a Promise in Next 15 dynamic routes */
+    const { bookId } = await context.params;
+
     if (!bookId) {
-      return NextResponse.json({ error: "Book ID is required." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Book ID is required." },
+        { status: 400 }
+      );
     }
 
-    /* ───────────────────────────────── AUTH ───────────────────────────────── */
-    const token =
-      (await cookies()).get("token")?.value;           // ← added await
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
+    /* ─────── auth ─────── */
+    const token = (await cookies()).get("token")?.value;
+    if (!token) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
     const user = verifyToken(token);
     if (!user || typeof user === "string") {
       return NextResponse.json({ error: "Invalid user token." }, { status: 403 });
     }
 
-    /* ───────────────────────────── DEVICE CHECK ───────────────────────────── */
+    /* ─────── device cap ─────── */
     const deviceId = req.headers.get("x-device-id") ?? undefined;
-    if (!deviceId) {
+    if (!deviceId)
       return NextResponse.json({ error: "No device ID supplied." }, { status: 400 });
-    }
 
     let device = await prisma.device.findFirst({
       where: { userId: user.id, deviceId },
     });
 
     if (!device) {
-      const deviceCount = await prisma.device.count({ where: { userId: user.id } });
-      if (deviceCount >= MAX_DEVICES) {
+      const count = await prisma.device.count({ where: { userId: user.id } });
+      if (count >= MAX_DEVICES)
         return NextResponse.json({ error: "DEVICE_LIMIT" }, { status: 403 });
-      }
 
       device = await prisma.device.create({
         data: { userId: user.id, deviceId },
       });
     }
 
-    /* ─────────────────────────── OWNERSHIP CHECK ─────────────────────────── */
-    const hasAccess = await prisma.orderItem.findFirst({
-      where: {
-        bookId,
-        order: {
-          userId: user.id,
-          status: "COMPLETED", // drop this line if you don’t track status yet
+    /* ─────── ownership check (skipped for SUPER_ADMIN) ─────── */
+    if (user.role !== "SUPER_ADMIN") {
+      const hasAccess = await prisma.orderItem.findFirst({
+        where: {
+          bookId,
+          order: { userId: user.id }, // ← no status filter anymore
         },
-      },
-    });
+      });
 
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: "You do not have access to this book." },
-        { status: 403 }
-      );
+      if (!hasAccess) {
+        return NextResponse.json({ error: "NO_ACCESS" }, { status: 403 });
+      }
     }
 
-    /* ───────────────────────────── SIGNED URL ────────────────────────────── */
+    /* ─────── generate signed URL ─────── */
     const book = await prisma.book.findUnique({ where: { id: bookId } });
     if (!book || !book.bookFile) {
       return NextResponse.json(
@@ -84,13 +79,16 @@ export async function GET(
       .getSignedUrl({
         version: "v4",
         action: "read",
-        expires: Date.now() + 5 * 60 * 1000, // 5 min
+        expires: Date.now() + 5 * 60 * 1000,
         responseDisposition: "inline",
       });
 
     return NextResponse.json({ url });
   } catch (err) {
-    console.error("❌ Error generating book view link:", err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error("❌ view-book route error:", err);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
