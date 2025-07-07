@@ -1,29 +1,35 @@
-"use client";
+/* -------------------------------------------------------------------------- */
+/*  components/ui/pdf-viewer.tsx – full-height, full-width React-PDF viewer   */
+/* -------------------------------------------------------------------------- */
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import 'react-pdf/dist/Page/TextLayer.css';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+} from '@/components/ui/popover';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import {
   Sidebar,
   SidebarContent,
   SidebarRail,
   SidebarProvider,
   SidebarTrigger,
-} from "@/components/blocks/sidebar";
-import { cn } from "@/lib/utils";
+} from '@/components/blocks/sidebar';
+import { cn } from '@/lib/utils';
 import {
   CircleMinus,
   CirclePlus,
@@ -31,18 +37,19 @@ import {
   RotateCcw,
   RotateCw,
   Search,
-} from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Document, Page, pdfjs, Thumbnail } from "react-pdf";
+} from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Document, Page, pdfjs, Thumbnail } from 'react-pdf';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc =
+  `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
 
 const ZOOM_OPTIONS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 4, 8];
 
 function highlightPattern(text: string, pattern: string, itemIndex: number) {
   return text.replace(
     pattern,
-    (value: string) => `<mark id="search-result-${itemIndex}">${value}</mark>`
+    value => `<mark id="search-result-${itemIndex}">${value}</mark>`
   );
 }
 
@@ -52,11 +59,11 @@ function Component({ url }: { url: string }) {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const viewportRef = useRef<HTMLDivElement>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
 
   const textRenderer = useCallback(
-    (textItem: { str: string; itemIndex: number }) =>
-      highlightPattern(textItem.str, searchQuery, textItem.itemIndex),
+    (t: { str: string; itemIndex: number }) =>
+      highlightPattern(t.str, searchQuery, t.itemIndex),
     [searchQuery]
   );
 
@@ -64,101 +71,98 @@ function Component({ url }: { url: string }) {
     setNumPages(numPages);
   }
 
+  /* ---------- intersection observer keeps currentPage in sync ---------- */
   useEffect(() => {
     if (!viewportRef.current) return;
 
-    const options = {
+    const opts: IntersectionObserverInit = {
       root: viewportRef.current,
-      rootMargin: "0px",
+      rootMargin: '0px',
       threshold: 0.5,
     };
 
-    const callback: IntersectionObserverCallback = (entries) => {
-      entries.forEach((entry) => {
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
         if (entry.isIntersecting) {
-          // Get the page number from the closest parent with data-page-number
-          const pageElement = entry.target.closest("[data-page-number]");
-          if (pageElement) {
-            const pageNumber = parseInt(
-              pageElement.getAttribute("data-page-number") || "1",
+          const pageEl = entry.target.closest('[data-page-number]');
+          if (pageEl) {
+            const n = parseInt(
+              pageEl.getAttribute('data-page-number') || '1',
               10
             );
-            setCurrentPage(pageNumber);
+            setCurrentPage(n);
           }
         }
       });
-    };
+    }, opts);
 
-    const observer = new IntersectionObserver(callback, options);
-
-    // Use a mutation observer to watch for when pages are added
-    const mutationObserver = new MutationObserver(() => {
-      const pages = viewportRef.current?.querySelectorAll(".react-pdf__Page");
-      if (pages) {
-        pages.forEach((page) => {
-          observer.observe(page);
-        });
-      }
+    const mo = new MutationObserver(() => {
+      viewportRef.current
+        ?.querySelectorAll('.react-pdf__Page')
+        .forEach(p => io.observe(p));
     });
 
-    mutationObserver.observe(viewportRef.current, {
-      childList: true,
-      subtree: true,
-    });
-
+    mo.observe(viewportRef.current, { childList: true, subtree: true });
     return () => {
-      observer.disconnect();
-      mutationObserver.disconnect();
+      io.disconnect();
+      mo.disconnect();
     };
   }, [numPages]);
 
+  /* ------------------------------ RENDER ------------------------------ */
   return (
     <SidebarProvider>
-      <Document
-        file={url}
-        onLoadSuccess={onDocumentLoadSuccess}
-        className={"w-full flex flex-row"}
-        loading={
-          <div className="flex flex-col items-center justify-center h-full">
-            <Loader2 className="size-4 animate-spin" />
-          </div>
-        }
-      >
-        <Sidebar>
-          <SidebarRail />
-          <SidebarContent className="flex flex-col p-8 items-center">
-            {Array.from(new Array(numPages), (el, index) => (
-              <div
-                className={cn(
-                  "flex flex-col gap-2 mb-4 w-48 hover:bg-muted transition p-2",
-                  index + 1 === currentPage && "bg-muted"
-                )}
-                key={`thumbnail_${index + 1}`}
-              >
-                <Thumbnail
-                  pageNumber={index + 1}
-                  className="border shadow-xs"
-                  width={170}
-                  height={100}
-                  rotate={rotation}
-                />
-                <div className="flex flex-row justify-center">
-                  <span className="text-sm text-gray-500">{index + 1}</span>
+      {/* outer wrapper guarantees full width AND height */}
+      <div className="flex w-full">
+        <Document
+          file={url}
+          onLoadSuccess={onDocumentLoadSuccess}
+          className="flex-1 h-full w-full flex flex-row"
+          loading={
+            <div className="flex h-full w-full items-center justify-center">
+              <Loader2 className="size-4 animate-spin" />
+            </div>
+          }
+        >
+          {/* ---- thumbnail sidebar ---- */}
+          <Sidebar>
+            <SidebarRail />
+            <SidebarContent className="flex flex-col p-8 items-center">
+              {Array.from({ length: numPages ?? 0 }, (_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    'flex flex-col gap-2 mb-4 w-48 hover:bg-muted transition p-2',
+                    i + 1 === currentPage && 'bg-muted'
+                  )}
+                >
+                  <Thumbnail
+                    pageNumber={i + 1}
+                    className="border shadow-xs"
+                    width={170}
+                    height={100}
+                    rotate={rotation}
+                  />
+                  <span className="text-sm text-gray-500 text-center">
+                    {i + 1}
+                  </span>
                 </div>
-              </div>
-            ))}
-          </SidebarContent>
-        </Sidebar>
-        <div className="flex-row w-full">
-          <div className="w-full h-full flex flex-col grow">
-            <div className="flex p-2 border-b justify-between">
-              <div className="flex flex-row gap-2 items-center">
+              ))}
+            </SidebarContent>
+          </Sidebar>
+
+          {/* ---- main column ---- */}
+          <div className="flex w-full flex-col">
+            {/* toolbar */}
+            <div className="flex justify-between p-2 border-b">
+              <div className="flex items-center gap-2">
                 <SidebarTrigger />
-                <div className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   Page {currentPage} of {numPages}
-                </div>
+                </span>
               </div>
-              <div className="flex flex-row gap-2 items-center">
+
+              <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -189,15 +193,14 @@ function Component({ url }: { url: string }) {
                   variant="ghost"
                   size="icon"
                   className="size-7"
-                  disabled={zoom >= ZOOM_OPTIONS[ZOOM_OPTIONS.length - 1]}
+                  disabled={zoom >= ZOOM_OPTIONS.at(-1)!}
                   onClick={() => setZoom(zoom + 0.25)}
                 >
                   <CirclePlus className="size-4" />
                 </Button>
-
                 <Select
                   value={zoom.toString()}
-                  onValueChange={(value) => setZoom(Number(value))}
+                  onValueChange={v => setZoom(Number(v))}
                 >
                   <SelectTrigger className="h-7 rounded-sm w-24">
                     <SelectValue placeholder="Zoom">
@@ -205,9 +208,9 @@ function Component({ url }: { url: string }) {
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent align="end">
-                    {ZOOM_OPTIONS.map((option) => (
-                      <SelectItem key={option} value={option.toString()}>
-                        {`${option * 100}%`}
+                    {ZOOM_OPTIONS.map(o => (
+                      <SelectItem key={o} value={o.toString()}>
+                        {`${o * 100}%`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -223,26 +226,26 @@ function Component({ url }: { url: string }) {
                     <Input
                       placeholder="Search"
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={e => setSearchQuery(e.target.value)}
                     />
                   </PopoverContent>
                 </Popover>
               </div>
             </div>
 
-            <ScrollArea className="h-16 grow w-full">
+            {/* pages */}
+            <ScrollArea className="grow w-full">
               <div className="flex flex-row grow">
                 <ScrollArea className="grow w-48" ref={viewportRef}>
                   <ScrollBar orientation="horizontal" />
-                  <div className="items-center flex p-8 flex-col grow w-full">
-                    {Array.from(new Array(numPages), (el, index) => (
+                  <div className="flex flex-col items-center p-8 grow w-full">
+                    {Array.from({ length: numPages ?? 0 }, (_, i) => (
                       <Page
-                        key={`page_${index + 1}`}
-                        pageNumber={index + 1}
+                        key={i}
+                        pageNumber={i + 1}
                         className="border shadow-xs mb-8"
-                        data-page-number={index + 1}
+                        data-page-number={i + 1}
                         renderAnnotationLayer={false}
-                        // renderTextLayer={false}
                         scale={zoom}
                         rotate={rotation}
                         loading={null}
@@ -254,8 +257,8 @@ function Component({ url }: { url: string }) {
               </div>
             </ScrollArea>
           </div>
-        </div>
-      </Document>
+        </Document>
+      </div>
     </SidebarProvider>
   );
 }
