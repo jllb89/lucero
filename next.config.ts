@@ -1,25 +1,43 @@
-import type { NextConfig } from "next";
-import dotenv from "dotenv";
+import type { NextConfig } from 'next';
+import dotenv from 'dotenv';
+import webpack from 'webpack';
 
 dotenv.config();
 
 const nextConfig: NextConfig = {
-  /*  Skip Next.js ESLint step in CI / prod builds  */
+  /* ─── ESLint ─── */
   eslint: { ignoreDuringBuilds: true },
 
-  /*  Public runtime env variables  */
+  /* ─── Public runtime vars ─── */
   env: {
     DATABASE_URL: process.env.DATABASE_URL,
-    JWT_SECRET: process.env.JWT_SECRET,
+    JWT_SECRET:   process.env.JWT_SECRET,
   },
 
-  /*  Polyfill Node-core modules that some browser code (pdfjs) expects  */
+  /* ─── Webpack tweaks ─── */
   webpack(config) {
+    /* 1.  Node-core polyfill (`require("url")`)  */
     config.resolve = config.resolve || {};
     config.resolve.fallback = {
       ...(config.resolve.fallback || {}),
-      url: require.resolve("url/"), // adds URL.parse et al.
+      url: require.resolve('url/'),
     };
+
+    /* 2.  Runtime shim: if window.URL.parse is missing, define it        */
+    const shim =
+      'if(typeof URL!=="undefined"&&typeof URL.parse!=="function"){' +
+      'URL.parse=(v,b)=>new URL(v,b);' +
+      '}';
+
+    config.plugins = config.plugins || [];
+    config.plugins.push(
+      new webpack.BannerPlugin({
+        banner: shim,
+        raw: true,
+        entryOnly: false,   // inject into every chunk
+      })
+    );
+
     return config;
   },
 };

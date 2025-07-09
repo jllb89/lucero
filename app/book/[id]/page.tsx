@@ -1,20 +1,19 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import dynamic from 'next/dynamic';
+import dynamic       from 'next/dynamic';
 import { useAuthorizedPdf } from '@/hooks/useAuthorizedPdf';
+import { MessageLoading }   from '@/components/ui/message-loading';
+import ErrorModal           from '@/components/ui/ErrorModal';
 
-import { MessageLoading } from '@/components/ui/message-loading';
-import ErrorModal        from '@/components/ui/ErrorModal';
-
-/* ── Lazy-load viewer on the client ── */
+// client-only viewer
 const PdfViewer = dynamic(
   () => import('@/components/ui/pdf-viewer').then(m => m.Component),
   { ssr: false }
 );
 
 export default function ReaderPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id }      = useParams<{ id: string }>();
   const { url, error } = useAuthorizedPdf(id);
 
   if (error) return <ErrorModal message={error} />;
@@ -27,9 +26,9 @@ export default function ReaderPage() {
     );
   }
 
-  /*  Full-viewport flex box ensures the viewer gets 100 % height & width  */
+  /* full-viewport, *no* body scrolling allowed */
   return (
-    <div>
+    <div className="h-screen w-screen overflow-hidden">
       <PdfViewer url={url} />
     </div>
   );
