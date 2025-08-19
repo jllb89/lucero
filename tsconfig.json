@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    /* ───── Core settings ───── */
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+
+    /* ───── TypeScript ergonomics ───── */
+    "strict": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "noEmit": true,
+    "incremental": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "jsx": "preserve",
+
+    /* ───── Next.js plugin ───── */
+    "plugins": [{ "name": "next" }],
+
+    /* ───── Path aliases ───── */
+    "baseUrl": ".",
+    "paths": {
+      "@/*":        ["./*"],      // catch-all (keep existing)
+      "@/utils/*":  ["utils/*"],  // new utils directory at project root
+      "@/hooks/*":  ["hooks/*"],  // new hooks directory at project root
+      "@/lib/*":    ["lib/*"]     // shared libs (prisma, auth, etc.)
+    }
+  },
+
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}

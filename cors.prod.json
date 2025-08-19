@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["https://lucero.app"],
+    "method": ["GET"],
+    "responseHeader": ["Content-Type"],
+    "maxAgeSeconds": 3600
+  }
+]

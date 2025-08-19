@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+}
+
+model User {
+  id               String   @id @default(uuid())
+  email            String   @unique
+  name             String?
+  password         String
+  role             Role     @default(USER)
+  phoneNumber      String
+  address          String?
+  createdAt        DateTime @default(now())
+  resetToken       String?  // 🔑 Used for /set-password and recovery
+  stripeCustomerId String?  @unique // 🔗 Stripe customer ID
+  devices          Device[]
+  orders           Order[]
+
+  @@map("User")
+}
+
+model Book {
+  id            String      @id @default(uuid())
+  title         String      @unique
+  author        String
+  description   String?
+  images        Json        @default("[]")
+  createdAt     DateTime    @default(now())
+  digitalPrice  Float?      @default(0)
+  physicalPrice Float?      @default(0)
+  stock         Int?        @default(0)
+  bookFile      String?
+  bookCover     String?
+  category      Category
+  active        Boolean     @default(true)
+  orderItems    OrderItem[]
+
+  @@index([title])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id      String @id @default(uuid())
+  orderId String
+  bookId  String
+  book    Book   @relation(fields: [bookId], references: [id])
+  order   Order  @relation(fields: [orderId], references: [id])
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  userId          String
+  total           Float
+  createdAt       DateTime    @default(now())
+  status          OrderStatus @default(PENDING)
+  shippingAddress String?     // 📦 Required for physical books
+  isDigitalOnly   Boolean     @default(false)
+  email           String?     // 📧 Useful for guest purchases
+  source          String?     // 🧾 Optional: stripe, admin, etc.
+  user            User        @relation(fields: [userId], references: [id])
+  orderItems      OrderItem[]
+}
+
+model Device {
+  id        String   @id @default(uuid())
+  userId    String
+  deviceId  String   @unique
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  REFUNDED
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum Category {
+  PRIMARIA
+  SECUNDARIA
+  BACHILLERATO
+  PARA_MAESTROS
+}
