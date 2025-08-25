@@ -11,3 +11,16 @@
   -webkit-user-select: none;    /* Safari */
   pointer-events: none;         /* no right-click or context menu */
 }
+
+/* ─── Custom Letter Spacing (tracking -3%) ─── */
+.ls--3 {
+  letter-spacing: -0.03em;
+}
+
+/* ─── Brand Light Gray (used in Hero, Search placeholder, Pills, FAQs, Footer) ─── */
+.text-lucero-light {
+  color: hsl(0, 0%, 84%);
+}
+.placeholder\:text-lucero-light::placeholder {
+  color: hsl(0, 0%, 84%);
+}
