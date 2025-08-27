@@ -3,16 +3,16 @@
 import { useId, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Copy } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 interface FloatingPasswordInputProps {
   label: string;
   name: string;
   value: string;
-  onChange: (value: string) => void;
+  onChangeAction?: (value: string) => void;
 }
 
-export function FloatingPasswordInput({ label, name, value, onChange }: FloatingPasswordInputProps) {
+export function FloatingPasswordInput({ label, name, value, onChangeAction }: FloatingPasswordInputProps) {
   const id = useId();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -20,6 +20,8 @@ export function FloatingPasswordInput({ label, name, value, onChange }: Floating
     navigator.clipboard.writeText(value);
     toast.success("Password copied to clipboard!");
   };
+
+  // Optional: if parent wants to react to visibility changes or similar, keep API minimal.
 
   return (
     <div className="space-y-3 max-w-[300px]">

@@ -7,7 +7,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { FloatingInput } from "@/components/ui/FloatingInput";
 import { FloatingPasswordInput } from "@/components/ui/FloatingPasswordInput"; // 🔥 Import new component
 import Link from "next/link";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
 
 export default function AddUserPage() {
@@ -141,7 +141,7 @@ export default function AddUserPage() {
             label="Generated Password"
             name="password"
             value={formData.password}
-            onChange={(newPassword) => setFormData((prev) => ({ ...prev, password: newPassword }))}
+            onChangeAction={(newPassword) => setFormData((prev) => ({ ...prev, password: newPassword }))}
           />
 
           {/* Submit */}

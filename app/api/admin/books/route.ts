@@ -14,9 +14,10 @@ export async function GET(req: Request) {
 
     console.log(`🔍 Fetching books - Page: ${page}, PerPage: ${perPage}, Search: "${search}"`);
 
-    // Fetch books with pagination & search
+    // Fetch books with pagination & search (only active)
     const books = await prisma.book.findMany({
       where: {
+        active: true,
         title: { contains: search, mode: "insensitive" },
       },
       skip,
@@ -32,7 +33,7 @@ export async function GET(req: Request) {
 
     // Count total books
     const totalBooks = await prisma.book.count({
-      where: { title: { contains: search, mode: "insensitive" } },
+      where: { active: true, title: { contains: search, mode: "insensitive" } },
     });
 
     console.log(`✅ Fetched ${books.length} books`);

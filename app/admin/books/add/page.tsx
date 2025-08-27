@@ -11,7 +11,7 @@ import {
 import { FloatingInput }      from '@/components/ui/FloatingInput';
 import { FloatingFileInput }  from '@/components/ui/FloatingFileInput';
 
-import toast                  from 'react-hot-toast';
+import { toast }                  from 'sonner';
 
 /* -------------------------------------------------- */
 /* helpers                                            */
@@ -32,6 +32,10 @@ export default function AddBookPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [filePreview, setFilePreview]   = useState<string | null>(null);
+  const [coverSize, setCoverSize] = useState<number | null>(null);
+  const [fileSize, setFileSize]   = useState<number | null>(null);
   const [form, setForm]       = useState({
     title         : '',
     author        : '',
@@ -54,9 +58,11 @@ export default function AddBookPage() {
   const onText = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  const onPriceBlur = (e: React.FocusEvent<HTMLInputElement>) =>
-    e.target.value &&
-    setForm({ ...form, [e.target.name]: formatPrice(e.target.value) });
+  // Only allow integers (no cents). Strip non-digits on the fly.
+  const onPriceInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const clean = e.target.value.replace(/\D+/g, '');
+    setForm({ ...form, [e.target.name]: clean });
+  };
 
   /* file handler --------------------------------------------------- */
   const onFile = (
@@ -65,16 +71,18 @@ export default function AddBookPage() {
   ) => {
     const f = e.target.files?.[0] ?? null;
     setForm({ ...form, [key]: f });
+    if (f) {
+      if (key === 'bookCover') {
+        setCoverPreview(URL.createObjectURL(f));
+        setCoverSize(f.size);
+      } else {
+        setFilePreview(f.name);
+        setFileSize(f.size);
+      }
+    }
   };
 
-  /* convert file → base64 (for current back‑end) ------------------- */
-  const toBase64 = (file: File): Promise<string> =>
-    new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload  = () => res(r.result as string);
-      r.onerror = rej;
-      r.readAsDataURL(file);
-    });
+  // no progress conversion helpers needed
 
   /* submit --------------------------------------------------------- */
   const onSubmit = async (e: React.FormEvent) => {
@@ -83,34 +91,28 @@ export default function AddBookPage() {
       return toast.error('Please complete required fields.');
     }
 
-    setLoading(true);
     try {
-      /* encode files */
-      const cover64 = form.bookCover ? await toBase64(form.bookCover) : null;
-      const file64  = await toBase64(form.bookFile!);
+      // Build multipart form data
+      const fd = new FormData();
+      fd.append('title', form.title);
+      fd.append('author', form.author);
+      fd.append('description', form.description);
+      fd.append('category', form.category);
+      fd.append('physicalPrice', String(Number(form.physicalPrice || 0)));
+      fd.append('digitalPrice',  String(Number(form.digitalPrice  || 0)));
+      if (form.bookCover) fd.append('bookCover', form.bookCover);
+      if (form.bookFile)  fd.append('bookFile',  form.bookFile);
 
-      /* strip $ and , from prices */
-      const strip = (s: string) => Number(s.replace(/[$,]/g, '') || 0);
-
+      toast.info('Subiendo archivos… serás redirigido cuando termine.');
       const res = await fetch('/api/admin/books/upload', {
-        method : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        body: fd,
         credentials: 'include',
-        body: JSON.stringify({
-          title        : form.title,
-          author       : form.author,
-          description  : form.description,
-          category     : form.category,
-          physicalPrice: strip(form.physicalPrice),
-          digitalPrice : strip(form.digitalPrice),
-          bookCover    : cover64,
-          bookFile     : file64,
-        }),
       });
-
       if (!res.ok) {
-        const { error } = await res.json();
-        throw new Error(error || 'Upload failed');
+        let msg = 'Upload failed';
+        try { const j = await res.json(); msg = j?.error || msg; } catch {}
+        throw new Error(msg);
       }
       toast.success('Book uploaded successfully!');
       router.push('/admin/books');
@@ -170,12 +172,33 @@ export default function AddBookPage() {
               onFileChangeAction={e => onFile(e, 'bookCover')}
             />
 
+            {coverPreview && (
+              <div className="mt-2 flex items-center gap-4">
+                <img src={coverPreview} alt="Cover preview" className="h-28 w-28 rounded object-cover" />
+                <div className="flex-1">
+                  <p className="mt-1 text-xs text-gray-500">
+                    {coverSize ? (coverSize / 1024 / 1024).toFixed(2) + ' MB' : ''}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <FloatingFileInput
               label="Book File (PDF)"
               name="bookFile"
               accept=".pdf"
               onFileChangeAction={e => onFile(e, 'bookFile')}
             />
+
+            {filePreview && (
+              <div className="mt-2 flex items-center gap-4">
+                <div className="flex-1">
+                  <p className="mt-1 text-xs text-gray-500">
+                    {filePreview} {fileSize ? '· ' + (fileSize / 1024 / 1024).toFixed(2) + ' MB' : ''}
+                  </p>
+                </div>
+              </div>
+            )}
           </section>
 
           {/* 3. pricing -------------------------------------------- */}
@@ -183,10 +206,10 @@ export default function AddBookPage() {
             <h3 className="text-lg font-light text-gray-800">Book Pricing</h3>
             <FloatingInput
               label="Physical Price (MXN)" name="physicalPrice" type="text"
-              value={form.physicalPrice} onChange={onText} onBlur={onPriceBlur}/>
+              value={form.physicalPrice} onChange={onPriceInput} inputMode="numeric"/>
             <FloatingInput
               label="Digital Price (MXN)"  name="digitalPrice"  type="text"
-              value={form.digitalPrice}  onChange={onText} onBlur={onPriceBlur}/>
+              value={form.digitalPrice}  onChange={onPriceInput} inputMode="numeric"/>
           </section>
 
           {/* 4. save ---------------------------------------------- */}

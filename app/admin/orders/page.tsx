@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Search, ChevronLeft, ChevronRight, ChevronFirst, ChevronLast } from "lucide-react";
 import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination";
-import { toast } from "react-hot-toast"; // ✅ Notifications
+import { toast } from "sonner"; // ✅ Notifications
 
 interface Order {
   id: string;

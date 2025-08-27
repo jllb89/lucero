@@ -4,6 +4,8 @@ import { PrismaClient } from "@prisma/client";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 
+export const runtime = 'nodejs';
+
 const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
@@ -25,21 +27,60 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    /* ───── Parse body ───── */
-    const body = await req.json();
-    const {
-      title, author, description = "",
-      category, bookFile, bookCover,
-      digitalPrice = 0, physicalPrice = 0, stock = 0,
-      bookImages,
-    } = body;
+    const ct = req.headers.get('content-type') || '';
+    let title = '' as string;
+    let author = '' as string;
+    let description = '' as string;
+    let category = '' as string;
+    let physicalPrice = 0 as number;
+    let digitalPrice = 0 as number;
+    let stock = 0 as number;
+    let bookCoverBuf: Buffer | null = null;
+    let bookFileBuf: Buffer | null = null;
+    let bookImages: any[] | undefined = undefined;
+
+    if (ct.includes('multipart/form-data')) {
+      const form = await req.formData();
+      title = String(form.get('title') || '');
+      author = String(form.get('author') || '');
+      description = String(form.get('description') || '');
+      category = String(form.get('category') || '');
+      physicalPrice = Number(form.get('physicalPrice') || 0) || 0;
+      digitalPrice = Number(form.get('digitalPrice') || 0) || 0;
+      stock = Number(form.get('stock') || 0) || 0;
+      const cover = form.get('bookCover');
+      const pdf = form.get('bookFile');
+      if (cover && typeof cover !== 'string') {
+        const ab = await (cover as File).arrayBuffer();
+        bookCoverBuf = Buffer.from(ab);
+      }
+      if (pdf && typeof pdf !== 'string') {
+        const ab = await (pdf as File).arrayBuffer();
+        bookFileBuf = Buffer.from(ab);
+      }
+    } else {
+      // Fallback: JSON base64
+      const body = await req.json();
+      title = body.title;
+      author = body.author;
+      description = body.description ?? '';
+      category = body.category;
+      physicalPrice = Number(body.physicalPrice || 0) || 0;
+      digitalPrice = Number(body.digitalPrice || 0) || 0;
+      stock = Number(body.stock || 0) || 0;
+      bookImages = body.bookImages;
+      const b64Cover: string | null | undefined = body.bookCover;
+      const b64File: string | null | undefined = body.bookFile;
+      if (b64Cover) bookCoverBuf = Buffer.from(String(b64Cover).split(',')[1] || '', 'base64');
+      if (b64File)  bookFileBuf  = Buffer.from(String(b64File).split(',')[1]  || '', 'base64');
+    }
 
     console.log("📝  Parsed fields:", {
       title, author, category, digitalPrice, physicalPrice, stock,
-      hasBookFile: !!bookFile, hasBookCover: !!bookCover,
+      hasBookFile: !!bookFileBuf, hasBookCover: !!bookCoverBuf,
     });
 
-    if (!bookFile) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+  if (!bookFileBuf) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     if (!category) return NextResponse.json({ error: "Category is required" }, { status: 400 });
 
     /* ───── Upload to Firebase Storage ───── */
@@ -49,18 +90,14 @@ export async function POST(req: NextRequest) {
     const bookFilePath = `books/${bookId}.pdf`;
     const bookFileRef  = bucket.file(bookFilePath);
 
-    console.log("📤  Uploading PDF to", bookFilePath);
-    await bookFileRef.save(Buffer.from(bookFile.split(",")[1], "base64"), {
-      contentType: "application/pdf",
-    });
+  console.log("📤  Uploading PDF to", bookFilePath);
+  await bookFileRef.save(bookFileBuf, { contentType: "application/pdf" });
 
     let bookCoverPath = "";
-    if (bookCover) {
+    if (bookCoverBuf) {
       bookCoverPath = `bookCovers/${bookId}.jpg`;
       console.log("📤  Uploading cover to", bookCoverPath);
-      await bucket
-        .file(bookCoverPath)
-        .save(Buffer.from(bookCover.split(",")[1], "base64"), { contentType: "image/jpeg" });
+      await bucket.file(bookCoverPath).save(bookCoverBuf, { contentType: "image/jpeg" });
     }
 
     /* ───── Write DB row ───── */
@@ -71,7 +108,7 @@ export async function POST(req: NextRequest) {
         title,
         author,
         description,
-        category,
+  category: category as any,
         bookFile:    bookFilePath,
         bookCover:   bookCoverPath,
         digitalPrice,

@@ -7,7 +7,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { FloatingInput } from "@/components/ui/FloatingInput";
 import { TagsSelector } from "@/components/ui/tags-selector";
 import Link from "next/link";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function EditUserPage() {
   const router = useRouter();

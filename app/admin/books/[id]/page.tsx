@@ -15,7 +15,7 @@ import {
 import { FloatingInput }        from '@/components/ui/FloatingInput';
 import { FloatingFileInput }    from '@/components/ui/FloatingFileInput';
 
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 /* ------------------------------------------------------------------ */
 /*  helpers                                                           */
@@ -39,6 +39,11 @@ export default function EditBookPage() {
   const { id }          = useParams<{ id: string }>();
 
   const [loading, setLoading] = useState(false);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [filePreview, setFilePreview]   = useState<string | null>(null);
+  const [coverSize, setCoverSize] = useState<number | null>(null);
+  const [fileSize, setFileSize]   = useState<number | null>(null);
+  // removed progress bars
   const [form, setForm]       = useState({
     title         : '',
     author        : '',
@@ -80,16 +85,27 @@ export default function EditBookPage() {
   const onText = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  const onPriceBlur = (e: React.FocusEvent<HTMLInputElement>) =>
-    e.target.value &&
-    setForm({ ...form, [e.target.name]: formatPrice(e.target.value) });
+  // Only allow integers (no cents). Strip non-digits on the fly.
+  const onPriceInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const clean = e.target.value.replace(/\D+/g, '');
+    setForm({ ...form, [e.target.name]: clean });
+  };
 
   const onFile = (
     e: React.ChangeEvent<HTMLInputElement>,
     key: 'bookCover' | 'bookFile',
   ) => {
-    const f = e.target.files?.[0];
-    if (f) setForm({ ...form, [key]: f });
+  const f = e.target.files?.[0];
+    if (f) {
+      setForm({ ...form, [key]: f });
+      if (key === 'bookCover') {
+        setCoverPreview(URL.createObjectURL(f));
+        setCoverSize(f.size);
+      } else {
+        setFilePreview(f.name);
+        setFileSize(f.size);
+      }
+    }
   };
 
   /* submit --------------------------------------------------------------- */
@@ -100,20 +116,19 @@ export default function EditBookPage() {
 
     setLoading(true);
     try {
-      const r = await fetch(`/api/admin/books/${id}`, {
-        method : 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({
-          ...form,
-          physicalPrice: Number(
-            String(form.physicalPrice).replace(/[$,]/g, ''),
-          ),
-          digitalPrice : Number(
-            String(form.digitalPrice).replace(/[$,]/g, ''),
-          ),
-        }),
-      });
-      if (!r.ok) throw new Error('Update failed');
+  const fd = new FormData();
+  fd.append('title', form.title);
+  fd.append('author', form.author);
+  fd.append('description', form.description);
+  fd.append('category', form.category);
+  fd.append('physicalPrice', String(Number(String(form.physicalPrice).replace(/[$,]/g, ''))));
+  fd.append('digitalPrice',  String(Number(String(form.digitalPrice).replace(/[$,]/g, ''))));
+  if (form.bookCover && typeof form.bookCover !== 'string') fd.append('bookCover', form.bookCover as File);
+  if (form.bookFile  && typeof form.bookFile  !== 'string') fd.append('bookFile',  form.bookFile  as File);
+
+  toast.info('Subiendo archivos… serás redirigido cuando termine.');
+  const r = await fetch(`/api/admin/books/${id}`, { method: 'PUT', body: fd });
+  if (!r.ok) throw new Error('Update failed');
       toast.success('Libro actualizado');
       router.push('/admin/books');
     } catch (e: any) {
@@ -197,30 +212,49 @@ export default function EditBookPage() {
           <section className="space-y-6">
             <h3 className="text-lg font-light text-gray-800">Book Files</h3>
 
-            {/* cover file input */}
+            {/* cover preview: new selection or existing */}
+            {(coverPreview || (typeof form.bookCover === 'string' && form.bookCover)) && (
+              <div className="flex items-center gap-4">
+                <img
+                  src={
+                    coverPreview
+                      ? coverPreview
+                      : (form.bookCover as string).startsWith('http')
+                        ? (form.bookCover as string)
+                        : `https://storage.googleapis.com/${bucket}/${form.bookCover}`
+                  }
+                  alt="cover preview"
+                  className="h-28 w-28 rounded object-cover"
+                />
+                <div className="flex-1">
+                  {coverSize && <p className="mt-1 text-xs text-gray-500">{(coverSize / 1024 / 1024).toFixed(2)} MB</p>}
+                </div>
+              </div>
+            )}
+
+            {/* cover input */}
             <FloatingFileInput
               label="Book Cover"
               name="bookCover"
               accept="image/*"
               defaultValue={
                 typeof form.bookCover === 'string' && form.bookCover
-                  ? form.bookCover.split('/').pop()
+                  ? (form.bookCover as string).split('/').pop()
                   : undefined
               }
               onFileChangeAction={e => onFile(e, 'bookCover')}
             />
 
-            {/* existing cover preview */}
-            {typeof form.bookCover === 'string' && form.bookCover && (
-              <img
-                src={
-                  form.bookCover.startsWith('http')
-                    ? form.bookCover
-                    : `https://storage.googleapis.com/${bucket}/${form.bookCover}`
-                }
-                alt="cover preview"
-                className="h-40 w-40 rounded-[10px] object-cover"
-              />
+            {/* pdf preview (name + progress) */}
+            {(filePreview || (typeof form.bookFile === 'string' && form.bookFile)) && (
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <p className="mt-1 text-xs text-gray-500">
+                    {filePreview || (typeof form.bookFile === 'string' && (form.bookFile as string).split('/').pop())}
+                    {fileSize ? ` · ${(fileSize / 1024 / 1024).toFixed(2)} MB` : ''}
+                  </p>
+                </div>
+              </div>
             )}
 
             {/* pdf input */}
@@ -230,7 +264,7 @@ export default function EditBookPage() {
               accept=".pdf"
               defaultValue={
                 typeof form.bookFile === 'string' && form.bookFile
-                  ? form.bookFile.split('/').pop()
+                  ? (form.bookFile as string).split('/').pop()
                   : undefined
               }
               onFileChangeAction={e => onFile(e, 'bookFile')}
@@ -245,16 +279,16 @@ export default function EditBookPage() {
               name="physicalPrice"
               type="text"
               value={form.physicalPrice}
-              onChange={onText}
-              onBlur={onPriceBlur}
+              onChange={onPriceInput}
+              inputMode="numeric"
             />
             <FloatingInput
               label="Digital Price (MXN)"
               name="digitalPrice"
               type="text"
               value={form.digitalPrice}
-              onChange={onText}
-              onBlur={onPriceBlur}
+              onChange={onPriceInput}
+              inputMode="numeric"
             />
           </section>
 

@@ -36,7 +36,6 @@ export default function BookTile({
 
     const panelRef = useRef<HTMLDivElement | null>(null);
     const panelId = useId();
-    const hasDescription = (description?.trim()?.length || 0) > 0;
 
     // Height + opacity animation per-card
     useLayoutEffect(() => {
@@ -82,37 +81,33 @@ export default function BookTile({
                 {title}
             </div>
 
-            {/* toggle description (only if content exists) */}
-            {hasDescription && (
-                <button
-                    type="button"
-                    aria-controls={panelId}
-                    aria-expanded={isOpen}
-                    onClick={handleToggle}
-                    className="mt-2 flex items-center gap-1 text-sm font-light text-neutral-600 underline"
-                >
-                    {isOpen ? "Cerrar descripción" : "Leer descripción"}
-                    <Image
-                        src="/arrow.svg"
-                        alt=""
-                        width={4}
-                        height={8}
-                        className={`h-2 w-auto transition-transform ${isOpen ? "rotate-90" : ""}`}
-                    />
-                </button>
-            )}
+            {/* toggle description */}
+            <button
+                type="button"
+                aria-controls={panelId}
+                aria-expanded={isOpen}
+                onClick={handleToggle}
+                className="mt-2 flex items-center gap-1 text-sm font-light text-neutral-600 underline"
+            >
+                {isOpen ? "Cerrar descripción" : "Leer descripción"}
+                <Image
+                    src="/arrow.svg"
+                    alt=""
+                    width={4}
+                    height={8}
+                    className={`h-2 w-auto transition-transform ${isOpen ? "rotate-90" : ""}`}
+                />
+            </button>
 
             {/* expandable description */}
-            {hasDescription && (
-                <div
-                    id={panelId}
-                    ref={panelRef}
-                    className="mt-3 text-sm text-neutral-700"
-                    style={{ height: 0, opacity: 0 }}
-                >
-                    {description}
-                </div>
-            )}
+            <div
+                id={panelId}
+                ref={panelRef}
+                className="mt-3 text-sm text-neutral-700"
+                style={{ height: 0, opacity: 0 }}
+            >
+                {description}
+            </div>
 
             {/* divider */}
             <div className="mt-4 h-px w-full bg-zinc-300" />

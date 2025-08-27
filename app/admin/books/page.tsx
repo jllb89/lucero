@@ -11,7 +11,7 @@ import { X, Search, ChevronLeft, ChevronRight, ChevronFirst, ChevronLast, Plus, 
 import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast"; // ✅ UI Feedback
+import { toast } from "sonner";
 
 interface Book {
   id: string;

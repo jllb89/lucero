@@ -99,23 +99,60 @@ export async function GET(
       console.debug(`${TAG} user device count`, { userId, userDeviceCount, MAX_DEVICES });
 
       if (userDeviceCount >= MAX_DEVICES) {
-        const durationMs = Date.now() - started;
-        console.warn(`${TAG} DEVICE_LIMIT (max devices reached)`, {
-          userId,
-          bookId,
-          deviceId,
-          userDeviceCount,
-          MAX_DEVICES,
-          durationMs,
+        // Oldest device for this user
+        const oldest = await prisma.device.findFirst({
+          where: { userId },
+          orderBy: { createdAt: 'asc' },
+          select: { deviceId: true, createdAt: true },
         });
-        return jsonError(
-          403,
-          'DEVICE_LIMIT',
-          'Has alcanzado el límite de dispositivos permitidos para tu cuenta.'
-        );
+
+        const confirmEvict = req.headers.get('x-evict-oldest') === '1';
+        if (!confirmEvict) {
+          const durationMs = Date.now() - started;
+          console.warn(`${TAG} DEVICE_LIMIT (confirmation required)`, {
+            userId,
+            bookId,
+            deviceId,
+            oldestDeviceId: oldest?.deviceId,
+            durationMs,
+          });
+          return NextResponse.json(
+            {
+              code: 'DEVICE_LIMIT',
+              message:
+                'Has alcanzado el límite de dispositivos. Confirma para reemplazar el dispositivo más antiguo.',
+              requiresConfirmation: true,
+              oldestDeviceId: oldest?.deviceId ?? null,
+              maxDevices: MAX_DEVICES,
+            },
+            { status: 409 }
+          );
+        }
+
+        if (oldest?.deviceId) {
+          // Best effort: evict oldest record
+          await prisma.device
+            .delete({ where: { deviceId: oldest.deviceId } })
+            .then(() =>
+              console.info(`${TAG} 🔐 evicted oldest device`, {
+                userId,
+                evictedDeviceId: oldest.deviceId,
+              })
+            )
+            .catch((err) =>
+              console.warn(`${TAG} ⚠️ failed to evict oldest device`, {
+                userId,
+                evictedDeviceId: oldest.deviceId,
+                error: err?.message,
+              })
+            );
+        }
+
+        // Note on sessions: we cannot remotely clear cookies on other devices.
+        // Clients should inform the user that the oldest session will be cerrada.
       }
 
-      await prisma.device.create({ data: { userId, deviceId } });  // <-- userId is string
+      await prisma.device.create({ data: { userId, deviceId } }); // register current device
       console.info(`${TAG} ✅ device registered`, { userId, deviceId });
     }
 
