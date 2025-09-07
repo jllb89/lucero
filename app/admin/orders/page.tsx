@@ -205,7 +205,11 @@ export default function OrdersPage() {
                 let product = '—';
                 let productList: string[] = [];
                 if (order.orderItems && order.orderItems.length > 0) {
-                  productList = order.orderItems.map((oi: any) => oi.book?.title || oi.book?.name).filter(Boolean);
+                  productList = order.orderItems.map((oi: any) => {
+                    const title = oi.book?.title || oi.book?.name;
+                    const qty = oi.quantity;
+                    return title ? (qty && qty > 1 ? `${title} (${qty})` : title) : undefined;
+                  }).filter(Boolean);
                   if (productList.length === 1) {
                     product = productList[0];
                   } else if (productList.length > 1) {

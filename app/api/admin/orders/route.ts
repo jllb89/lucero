@@ -27,6 +27,8 @@ export async function GET(req: Request) {
         },
       },
     });
+    // Attach quantity to each orderItem (should already be present if schema is correct)
+    // No extra logic needed unless you want to sum or transform
 
     // Get total order count for pagination
     const totalOrders = await prisma.order.count();

@@ -14,7 +14,7 @@ export async function GET(req: Request) {
 
     console.log(`🔍 Fetching books - Page: ${page}, PerPage: ${perPage}, Search: "${search}"`);
 
-    // Fetch books with pagination & search (only active)
+    // Fetch books with pagination & search (only active), including orderItems
     const books = await prisma.book.findMany({
       where: {
         active: true,
@@ -22,15 +22,13 @@ export async function GET(req: Request) {
       },
       skip,
       take: perPage,
-      select: {
-        id: true,
-        title: true,
-        digitalPrice: true,
-        physicalPrice: true,
-        createdAt: true,
-        active: true,
+      include: {
+        orderItems: true,
       },
     });
+
+  // No orderedQuantity logic needed here
+  const booksWithOrderCount = books;
 
     // Count total books
     const totalBooks = await prisma.book.count({
@@ -40,7 +38,7 @@ export async function GET(req: Request) {
     console.log(`✅ Fetched ${books.length} books`);
 
     return NextResponse.json({
-      books,
+      books: booksWithOrderCount,
       totalBooks,
       totalPages: Math.ceil(totalBooks / perPage),
       currentPage: page,

@@ -21,6 +21,7 @@ interface Book {
   physicalPrice?: number;
   createdAt: string;
   active: boolean;
+  orderedQuantity?: number;
 }
 
 interface ApiResponse {
@@ -179,7 +180,6 @@ export default function BooksPage() {
                     <Link href={`/admin/books/${book.id}`} className="underline text-black">
                       {book.title}
                     </Link>
-
                   </TableCell>
                   <TableCell>${book.digitalPrice?.toFixed(2) || "—"}</TableCell>
                   <TableCell>${book.physicalPrice?.toFixed(2) || "—"}</TableCell>
