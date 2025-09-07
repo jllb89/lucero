@@ -65,10 +65,7 @@ export default function BookTile({
 
     return (
         <div
-            className={[
-                "flex flex-col items-start rounded-[20px] bg-lucero-light shadow-sm hover:shadow-lg p-4 transition-all duration-300",
-                "w-64 sm:w-64 md:w-64",
-            ].join(" ")}
+            className={["flex flex-col items-start rounded-[20px] bg-lucero-light shadow-sm hover:shadow-lg p-4 transition-all duration-300", "w-64 sm:w-64 md:w-64"].join(" ")}
         >
             {/* cover */}
             <img

@@ -80,18 +80,19 @@ export async function POST(req: NextRequest) {
       hasBookFile: !!bookFileBuf, hasBookCover: !!bookCoverBuf,
     });
 
-  if (!bookFileBuf) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
-    if (!category) return NextResponse.json({ error: "Category is required" }, { status: 400 });
+  if (!category) return NextResponse.json({ error: "Category is required" }, { status: 400 });
 
     /* ───── Upload to Firebase Storage ───── */
     const bookId = crypto.randomUUID();
     const bucket = storage.bucket();
 
-    const bookFilePath = `books/${bookId}.pdf`;
-    const bookFileRef  = bucket.file(bookFilePath);
-
-  console.log("📤  Uploading PDF to", bookFilePath);
-  await bookFileRef.save(bookFileBuf, { contentType: "application/pdf" });
+    let bookFilePath = "";
+    if (bookFileBuf) {
+      bookFilePath = `books/${bookId}.pdf`;
+      const bookFileRef = bucket.file(bookFilePath);
+      console.log("📤  Uploading PDF to", bookFilePath);
+      await bookFileRef.save(bookFileBuf, { contentType: "application/pdf" });
+    }
 
     let bookCoverPath = "";
     if (bookCoverBuf) {
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
         title,
         author,
         description,
-  category: category as any,
+        category: category as any,
         bookFile:    bookFilePath,
         bookCover:   bookCoverPath,
         digitalPrice,

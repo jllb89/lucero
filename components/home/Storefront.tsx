@@ -107,10 +107,13 @@ export default function Storefront({ initialBooks }: { initialBooks: StoreBook[]
       <CategoryPills selected={selectedCat} onSelect={onSelect} />
 
       {/* FEATURED / LIST — 5 per row on large screens */}
-      <section className="container mx-auto max-w-7xl px-6 pb-6 pt-10">
-        <div ref={gridRef} className="-mx-2 flex flex-wrap">
+      <section className="container mx-auto max-w-7xl px-6 pb-8 pt-10">
+        <div
+          ref={gridRef}
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-[16rem] gap-y-10 justify-center"
+        >
           {filteredBooks.length === 0 ? (
-            <div className="w-full px-2 py-8 text-center text-neutral-500">Sin resultados</div>
+            <div className="w-full px-4 py-6 text-center text-neutral-500">Sin resultados</div>
           ) : (
             filteredBooks.map((b) => {
               let cover = b.coverUrl || b.bookCover || "";
@@ -124,11 +127,7 @@ export default function Storefront({ initialBooks }: { initialBooks: StoreBook[]
               const price = `$${priceNum.toFixed(2)}`;
 
               return (
-                <div
-                  key={b.id}
-                  data-tile="1"
-                  className="w-1/2 px-2 mb-6 sm:w-1/2 md:w-1/3 lg:w-1/5 xl:w-1/5"
-                >
+                <div key={b.id} data-tile="1" className="mx-auto">
                   <BookTile id={b.id} title={b.title} image={cover} price={price} description={b.description ?? ""} />
                 </div>
               );

@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Search, ChevronLeft, ChevronRight, ChevronFirst, ChevronLast, Plus, Trash } from "lucide-react";
 import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination";
@@ -19,6 +20,7 @@ interface Book {
   digitalPrice?: number;
   physicalPrice?: number;
   createdAt: string;
+  active: boolean;
 }
 
 interface ApiResponse {
@@ -121,13 +123,13 @@ export default function BooksPage() {
             {/* Delete Button (Only visible if books are selected) */}
             {selectedBooks.size > 0 && (
               <Button
-              className="bg-white text-black border border-black px-4 py-2 rounded-lg hover:bg-gray-100 transition-all flex items-center"
-              style={{ borderRadius: "6px"}}
-              onClick={deleteSelectedBooks}
-            >
-              <Trash className="w-5 h-5 mr-2" /> Delete Selected
-            </Button>
-            
+                className="bg-white text-black border border-black px-4 py-2 rounded-lg hover:bg-gray-100 transition-all flex items-center"
+                style={{ borderRadius: "6px" }}
+                onClick={deleteSelectedBooks}
+              >
+                <Trash className="w-5 h-5 mr-2" /> Delete Selected
+              </Button>
+
             )}
 
             {/* Add Book Button */}
@@ -159,6 +161,7 @@ export default function BooksPage() {
               <TableHead>Digital Price</TableHead>
               <TableHead>Physical Price</TableHead>
               <TableHead>Created At</TableHead>
+              <TableHead>Active</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -173,14 +176,36 @@ export default function BooksPage() {
                     />
                   </TableCell>
                   <TableCell>
-                  <Link href={`/admin/books/${book.id}`} className="underline text-black">
-  {book.title}
-</Link>
+                    <Link href={`/admin/books/${book.id}`} className="underline text-black">
+                      {book.title}
+                    </Link>
 
                   </TableCell>
                   <TableCell>${book.digitalPrice?.toFixed(2) || "—"}</TableCell>
                   <TableCell>${book.physicalPrice?.toFixed(2) || "—"}</TableCell>
                   <TableCell>{new Date(book.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={book.active}
+                        onCheckedChange={async (newActive: boolean) => {
+                          try {
+                            const res = await fetch(`/api/admin/books/${book.id}`, {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ active: newActive }),
+                            });
+                            if (!res.ok) throw new Error("Failed to update status");
+                            setBooks((prev) => prev.map((b) => b.id === book.id ? { ...b, active: newActive } : b));
+                            toast.success(`Book marked as ${newActive ? "active" : "inactive"}`);
+                          } catch (error) {
+                            toast.error("Error updating status");
+                          }
+                        }}
+                        aria-label={book.active ? "Set inactive" : "Set active"}
+                      />
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (

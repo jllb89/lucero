@@ -66,6 +66,7 @@ model Order {
   name            String?     // 🧑 Customer name (added 2025-09-06)
   phoneNumber     String?     // 📞 Customer phone (added 2025-09-06)
   source          String?     // 🧾 Optional: stripe, admin, etc.
+  stripeSessionId String?     @unique // Stripe session/payment intent id for idempotency
   user            User        @relation(fields: [userId], references: [id])
   orderItems      OrderItem[]
 }

@@ -87,7 +87,7 @@ export default function AddBookPage() {
   /* submit --------------------------------------------------------- */
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title || !form.author || !form.bookFile) {
+    if (!form.title || !form.author) {
       return toast.error('Please complete required fields.');
     }
 

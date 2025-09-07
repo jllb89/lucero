@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { verifyToken } from "@/lib/auth";
@@ -145,6 +146,36 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     return NextResponse.json({ success: true, book: updatedBook });
   } catch (error) {
     console.error("❌ Failed to update book:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+// ✅ Toggle Active Status (PATCH)
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    const { id: bookId } = await context.params;
+    // ✅ Retrieve token from cookies
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    // ✅ Verify token
+    const user = verifyToken(token);
+    if (!user || typeof user !== "object" || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const body = await req.json();
+    if (typeof body.active !== 'boolean') {
+      return NextResponse.json({ error: "Missing or invalid 'active' boolean in request body" }, { status: 400 });
+    }
+    const updatedBook = await prisma.book.update({
+      where: { id: bookId },
+      data: { active: body.active },
+    });
+    return NextResponse.json({ success: true, book: updatedBook });
+  } catch (error) {
+    console.error("❌ Failed to toggle active status:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

@@ -38,7 +38,7 @@ app.prepare().then(() => {
 
     // ...existing webhook logic...
     if (event.type === 'checkout.session.completed' || event.type === 'payment_link.completed') {
-      const session = event.data.object;
+  const session = event.data.object;
       // Log the full session object for debugging customer info
       try {
         console.log('[stripe-webhook] SESSION:', JSON.stringify(session, null, 2));
@@ -98,14 +98,15 @@ app.prepare().then(() => {
   // Optionally log found user
       }
       userId = user.id;
-      // 4. Default status to 'PENDING'
-      const status = 'PENDING';
+      // 4. Default status to 'PAID' (Stripe = paid)
+  const status = 'PENDING';
       const source = 'stripe';
       const books = session.metadata?.books ? JSON.parse(session.metadata.books) : [];
-  // Optionally log books in order
-      const existing = await prisma.order.findFirst({ where: { email, total, createdAt: { gte: new Date(Date.now() - 1000 * 60 * 5) } } });
+      const stripeSessionId = session.id;
+      // Idempotency: only create order if not already created for this session
+      const existing = await prisma.order.findUnique({ where: { stripeSessionId } });
       if (existing) {
-  // Optionally log existing order
+        console.log(`[stripe-webhook] Order already exists for stripeSessionId: ${stripeSessionId}`);
       }
       if (!existing && userId) {
         const order = await prisma.order.create({
@@ -119,13 +120,50 @@ app.prepare().then(() => {
             total,
             status,
             source,
+            stripeSessionId,
             orderItems: {
               create: books.map((b) => ({ bookId: b.bookId })),
             },
           },
+          include: {
+            orderItems: { include: { book: true } },
+          },
         });
         // Log created order with customer info
         console.log('[stripe-webhook] Created order:', JSON.stringify(order, null, 2));
+
+        // --- Notification Email Logic (API call) ---
+        try {
+          const baseUrl =
+            process.env.NEXT_PUBLIC_BASE_URL
+              ? process.env.NEXT_PUBLIC_BASE_URL
+              : process.env.VERCEL_URL
+                ? `https://${process.env.VERCEL_URL}`
+                : "http://localhost:3000";
+          const adminNotifyUrl = `${baseUrl}/api/mail/new-order`;
+          const customerNotifyUrl = `${baseUrl}/api/mail/customer-confirmation`;
+          // Admin notification
+          const adminRes = await fetch(adminNotifyUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderId: order.id }),
+          });
+          const adminResult = await adminRes.json();
+          console.log(`[stripe-webhook] Admin notification email result:`, adminResult);
+          // Customer confirmation
+          if (order.email) {
+            const custRes = await fetch(customerNotifyUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ orderId: order.id }),
+            });
+            const custResult = await custRes.json();
+            console.log(`[stripe-webhook] Customer confirmation email result:`, custResult);
+          }
+        } catch (err) {
+          console.error(`[stripe-webhook] Failed to trigger email notifications:`, err);
+        }
+        // --- End Notification Email Logic ---
       }
     }
     res.json({ received: true });

@@ -28,6 +28,7 @@ export async function GET(req: Request) {
         digitalPrice: true,
         physicalPrice: true,
         createdAt: true,
+        active: true,
       },
     });
 

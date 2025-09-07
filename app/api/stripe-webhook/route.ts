@@ -73,16 +73,13 @@ export async function POST(req: NextRequest) {
     const books = session.metadata?.books ? JSON.parse(session.metadata.books) : [];
     console.log(`[stripe-webhook] Books in order:`, books);
 
-    // Only create order if not already created (idempotency)
-    const existing = await prisma.order.findFirst({
-      where: {
-        email,
-        total,
-        createdAt: { gte: new Date(Date.now() - 1000 * 60 * 5) }
-      }
+    // Only create order if not already created (idempotency by stripeSessionId)
+    const stripeSessionId = session.id;
+    const existing = await prisma.order.findUnique({
+      where: { stripeSessionId }
     });
     if (existing) {
-      console.log(`[stripe-webhook] Order already exists for email: ${email}, total: ${total}`);
+      console.log(`[stripe-webhook] Order already exists for stripeSessionId: ${stripeSessionId}`);
     }
     if (!existing && userId) {
       const status = "PAID"; // Set your desired status
@@ -98,12 +95,29 @@ export async function POST(req: NextRequest) {
           total,
           status,
           source,
+          stripeSessionId,
           orderItems: {
             create: books.map((b: { bookId: string }) => ({ bookId: b.bookId })),
           },
         } as any, // Cast to any to allow new fields
       });
       console.log(`[stripe-webhook] Created order:`, order);
+
+      // Trigger notification email to admin(s)
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+        const notifyUrl = `${baseUrl}/api/mail/new-order`;
+        console.log(`[stripe-webhook] Triggering notification email for orderId: ${order.id} to ${notifyUrl}`);
+        const res = await fetch(notifyUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: order.id }),
+        });
+        const notifyResult = await res.json();
+        console.log(`[stripe-webhook] Notification email result:`, notifyResult);
+      } catch (e) {
+        console.error(`[stripe-webhook] Failed to trigger notification email:`, e);
+      }
     }
     return NextResponse.json({ received: true });
   }
