@@ -26,38 +26,39 @@ app.prepare().then(() => {
   // IMPORTANT: Do not use any body parser before this route!
   // Stripe webhook endpoint (must use raw body, must be first)
   server.post('/api/stripe-webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
-  // Only log the session object after event is constructed (for debugging customer info)
-    const sig = req.headers['stripe-signature'];
-    let event;
     try {
-      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-    } catch (err) {
-      console.error('[stripe-webhook] Invalid signature or event:', err);
-      return res.status(400).json({ error: `Webhook Error: ${err.message}` });
-    }
-
-    // ...existing webhook logic...
-    if (event.type === 'checkout.session.completed' || event.type === 'payment_link.completed') {
-  const session = event.data.object;
-      // Log the full session object for debugging customer info
+      // Only log the session object after event is constructed (for debugging customer info)
+      const sig = req.headers['stripe-signature'];
+      let event;
       try {
-        console.log('[stripe-webhook] SESSION:', JSON.stringify(session, null, 2));
-      } catch (e) {
-        console.log('[stripe-webhook] Could not stringify session:', e);
+        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+      } catch (err) {
+        console.error('[stripe-webhook] Invalid signature or event:', err);
+        return res.status(400).json({ error: `Webhook Error: ${err.message}` });
       }
-      // 1. Require email
-      const email = session.customer_details?.email || session.customer_email || '';
-      if (!email) {
-        console.warn('[stripe-webhook] No email found in session. Order will not be created.');
-        return res.status(400).json({ error: 'Email is required for order creation.' });
-      }
-      // 2. Require shipping address (support both Payment Links and Checkout Sessions)
-      const shippingAddressObj =
-        session.shipping?.address || // Checkout Sessions
-        session.shipping_details?.address; // Payment Links
 
-      const shippingAddress = shippingAddressObj
-        ? [
+      // ...existing webhook logic...
+      if (event.type === 'checkout.session.completed' || event.type === 'payment_link.completed') {
+        const session = event.data.object;
+        // Log the full session object for debugging customer info
+        try {
+          console.log('[stripe-webhook] SESSION:', JSON.stringify(session, null, 2));
+        } catch (e) {
+          console.log('[stripe-webhook] Could not stringify session:', e);
+        }
+        // 1. Require email
+        const email = session.customer_details?.email || session.customer_email || '';
+        if (!email) {
+          console.warn('[stripe-webhook] No email found in session. Order will not be created.');
+          return res.status(400).json({ error: 'Email is required for order creation.' });
+        }
+        // 2. Require shipping address (support both Payment Links and Checkout Sessions)
+        const shippingAddressObj =
+          session.shipping?.address || // Checkout Sessions
+          session.shipping_details?.address; // Payment Links
+
+        const shippingAddress = shippingAddressObj
+          ? [
             shippingAddressObj.line1,
             shippingAddressObj.line2,
             shippingAddressObj.city,
@@ -107,8 +108,9 @@ app.prepare().then(() => {
       const existing = await prisma.order.findUnique({ where: { stripeSessionId } });
       if (existing) {
         console.log(`[stripe-webhook] Order already exists for stripeSessionId: ${stripeSessionId}`);
+        return res.json({ received: true });
       }
-      if (!existing && userId) {
+      if (userId) {
         const order = await prisma.order.create({
           data: {
             userId,
@@ -169,7 +171,11 @@ app.prepare().then(() => {
         // --- End Notification Email Logic ---
       }
     }
-    res.json({ received: true });
+      res.json({ received: true });
+    } catch (err) {
+      console.error('[stripe-webhook] Unhandled error:', err);
+      res.status(500).json({ error: 'Internal server error', details: err?.message || err });
+    }
   });
 
   // (Optional) Add other body parsers for other routes here, AFTER the webhook route
@@ -181,8 +187,8 @@ app.prepare().then(() => {
     return handle(req, res);
   });
 
-  server.listen(port, (err) => {
-    if (err) throw err;
-    console.log(`> Ready on http://localhost:${port}`);
-  });
-});
+    server.listen(port, (err) => {
+      if (err) throw err;
+      console.log(`> Ready on http://localhost:${port}`);
+    });
+  }); // <-- Add this closing brace to match app.prepare().then(() => { ... })
