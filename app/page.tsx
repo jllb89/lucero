@@ -63,8 +63,8 @@ export default async function Home() {
       </section>
 
       {/* Banner stays on the server page */}
-      <section className="container mx-auto max-w-7xl px-6 pb-24">
-        <div className="mt-20 overflow-hidden rounded-2xl">
+      <section className="container mx-auto max-w-7xl px-6 pb-6">
+        <div className="mt-0 overflow-hidden rounded-2xl">
           <img
             src="https://placehold.co/1728x731"
             alt="Promoción"

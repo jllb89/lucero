@@ -25,9 +25,9 @@ export async function GET() {
       totalSales: totalSales._sum.total || 0,
       pendingOrders,
       totalBooks,
-      recentOrders: recentOrders.map((order: { id: string; user: { email: string }; total: number; status: string; createdAt: Date }) => ({
+      recentOrders: recentOrders.map((order: any) => ({
         id: order.id,
-        userEmail: order.user.email,
+        userEmail: order.user?.email || order.email || "-",
         total: order.total,
         status: order.status,
         createdAt: order.createdAt,

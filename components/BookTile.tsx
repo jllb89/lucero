@@ -10,8 +10,8 @@ const inter = Inter({ subsets: ["latin"] });
 export type BookTileProps = {
     id: string;
     title: string;
-    image: string;      // cover url
-    price: string;      // e.g. "$200 MXN"
+    image: string;   
+    price: string; 
     description: string;
 
     /** Controlled API (optional) */
@@ -66,8 +66,8 @@ export default function BookTile({
     return (
         <div
             className={[
-                "flex flex-col items-start rounded-[20px] bg-lucero-light hover:bg-lucero-light-hover p-6 transition-colors duration-300",
-                "w-72 sm:w-80 md:w-72",
+                "flex flex-col items-start rounded-[20px] bg-lucero-light shadow-sm hover:shadow-lg p-4 transition-all duration-300",
+                "w-64 sm:w-64 md:w-64",
             ].join(" ")}
         >
             {/* cover */}
@@ -78,7 +78,7 @@ export default function BookTile({
             />
 
             {/* title */}
-            <div className={["mt-4 text-xl font-regular text-black ls--3", inter.className].join(" ")}>
+            <div className={["mt-4 text-md font-regular text-black ls--3", inter.className].join(" ")}>
                 {title}
             </div>
 
@@ -89,7 +89,7 @@ export default function BookTile({
                     aria-controls={panelId}
                     aria-expanded={isOpen}
                     onClick={handleToggle}
-                    className="mt-2 flex items-center gap-1 text-sm font-light text-neutral-600 underline"
+                    className="mt-2 flex items-center gap-1 text-xs font-light text-neutral-600 underline"
                 >
                     {isOpen ? "Cerrar descripción" : "Leer descripción"}
                     <Image
@@ -119,12 +119,12 @@ export default function BookTile({
 
             {/* price + add-to-cart */}
             <div className="mt-3 flex w-full items-center justify-between">
-                <span className={["text-lg font-medium text-black ls--3", inter.className].join(" ")}>
+                <span className={["text-lg text-sm text-black ls--3", inter.className].join(" ")}>
                     {price}
                 </span>
                 <button
                     type="button"
-                    className="rounded-full bg-lucero-light-hover px-4 py-2 text-sm font-medium text-black transition-colors duration-300 ease-in hover:bg-black hover:text-white"
+                    className="rounded-full bg-lucero-light-hover px-4 py-2 text-sm font-sm text-black transition-colors duration-300 ease-in hover:bg-black hover:text-white"
                     aria-label="Agregar al carrito"
                     onClick={() => {
                         // Convert price like "$200" or "$200 MXN" to number 200

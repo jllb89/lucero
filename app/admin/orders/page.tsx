@@ -18,10 +18,13 @@ interface Order {
   total: number;
   status: string;
   createdAt: string;
-  user: {
+  shippingAddress?: string;
+  orderItems?: { book?: { title?: string } }[];
+  user?: {
     name?: string;
-    username?: string;
+    email?: string;
     phoneNumber?: string;
+    address?: string;
   };
 }
 
@@ -117,8 +120,8 @@ export default function OrdersPage() {
        <div className="bg-white rounded-xl p-6 relative">
         <h2 className="text-xl font-regular text-black mb-4">Orders</h2>
 
-        <div className="overflow-x-auto">
-          <Table className="bg-white border-none rounded-xl">
+        <div className="overflow-x-auto w-full">
+          <Table className="bg-white border-none rounded-xl min-w-max">
             <TableHeader>
               {/* Search & Status Selector Row */}
               <TableRow className="border-b border-gray-200 hover:bg-transparent">
@@ -177,33 +180,62 @@ export default function OrdersPage() {
                   />
                 </TableHead>
                 <TableHead>Order ID</TableHead>
-                <TableHead>Created At</TableHead>
-                <TableHead>User Name</TableHead>
-                <TableHead>Username</TableHead>
-                <TableHead>User Phone</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Date & Time</TableHead>
+                <TableHead>Phone number</TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>Address</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Total</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order) => (
-                <TableRow key={order.id} className={selectedOrders.has(order.id) ? "bg-gray-200" : ""}>
-                  <TableCell className="align-middle">
-                    <Checkbox
-                      checked={selectedOrders.has(order.id)}
-                      onCheckedChange={() => toggleOrderSelection(order.id)}
-                      className="cursor-pointer h-5 w-5 align-middle"
-                    />
-                  </TableCell>
-                  <TableCell><span className="text-black underline cursor-pointer">{order.id}</span></TableCell>
-                  <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell>{order.user?.name || "—"}</TableCell>
-                  <TableCell>{order.user?.username || "—"}</TableCell>
-                  <TableCell>{order.user?.phoneNumber || "—"}</TableCell>
-                  <TableCell><Badge className="bg-black text-white">{statusMap[order.status] || order.status}</Badge></TableCell>
-                  <TableCell>${order.total.toFixed(2)}</TableCell>
-                </TableRow>
-              ))}
+              {orders.map((order) => {
+                // Format date/time for Mexico City
+                const date = new Date(order.createdAt);
+                const mxTime = date.toLocaleString('es-MX', { timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                // Get customer name, phone, and address from order only
+                const email = (order as any).email || '—';
+                const customer = (order as any).name || '—';
+                const phone = (order as any).phoneNumber || '—';
+                const address = (order as any).shippingAddress || (order as any).address || '—';
+
+                // Get product name(s) from orderItems, fallback to order.product if present
+                let product = '—';
+                let productList: string[] = [];
+                if (order.orderItems && order.orderItems.length > 0) {
+                  productList = order.orderItems.map((oi: any) => oi.book?.title || oi.book?.name).filter(Boolean);
+                  if (productList.length === 1) {
+                    product = productList[0];
+                  } else if (productList.length > 1) {
+                    product = productList.join(', ');
+                  }
+                } else if ((order as any).product) {
+                  product = (order as any).product;
+                  productList = [product];
+                }
+                return (
+                  <TableRow key={order.id} className={selectedOrders.has(order.id) ? "bg-gray-200" : ""}>
+                    <TableCell className="align-middle">
+                      <Checkbox
+                        checked={selectedOrders.has(order.id)}
+                        onCheckedChange={() => toggleOrderSelection(order.id)}
+                        className="cursor-pointer h-5 w-5 align-middle"
+                      />
+                    </TableCell>
+                    <TableCell><span className="text-black underline cursor-pointer">{order.id}</span></TableCell>
+                    <TableCell>{email}</TableCell>
+                    <TableCell>{customer}</TableCell>
+                    <TableCell>{mxTime}</TableCell>
+                    <TableCell>{phone}</TableCell>
+                    <TableCell title={productList.length > 1 ? productList.join(', ') : undefined} style={{ cursor: productList.length > 1 ? 'pointer' : undefined }}>{product}</TableCell>
+                    <TableCell>{address}</TableCell>
+                    <TableCell><Badge className="bg-black text-white">{statusMap[order.status] || order.status}</Badge></TableCell>
+                    <TableCell>${order.total.toFixed(2)}</TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>

@@ -63,6 +63,8 @@ model Order {
   shippingAddress String?     // 📦 Required for physical books
   isDigitalOnly   Boolean     @default(false)
   email           String?     // 📧 Useful for guest purchases
+  name            String?     // 🧑 Customer name (added 2025-09-06)
+  phoneNumber     String?     // 📞 Customer phone (added 2025-09-06)
   source          String?     // 🧾 Optional: stripe, admin, etc.
   user            User        @relation(fields: [userId], references: [id])
   orderItems      OrderItem[]

@@ -115,15 +115,10 @@ export default function CartBadge() {
             <Cart isOpen={open} />
             {count > 0 && (
               <div className="mt-4 overflow-hidden rounded-md">
-                <a
-                  href="/checkout"
-                  className="block w-full bg-black px-4 py-2 text-center text-sm font-medium text-white hover:bg-zinc-800 transition-colors"
-                  style={{ borderRadius: 8 }}
-                >
-                  Finalizar compra
-                </a>
+                <PaymentLinkButton />
               </div>
             )}
+
           </div>
         </div>
 
@@ -156,5 +151,39 @@ export default function CartBadge() {
         </button>
       </div>
     </div>
+  );
+}
+export function PaymentLinkButton() {
+  const { items } = useCart();
+  const [loading, setLoading] = useState(false);
+
+  const handlePay = async () => {
+    if (!items.length) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/payment-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.url) throw new Error(data?.error || "No se pudo crear el link de pago");
+      window.location.href = data.url;
+    } catch (e) {
+      alert("No se pudo crear el link de pago");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handlePay}
+      disabled={loading}
+      className="block w-full bg-black px-4 py-2 text-center text-sm font-medium text-white hover:bg-zinc-800 transition-colors rounded-md disabled:opacity-60"
+      style={{ borderRadius: 8 }}
+    >
+      {loading ? "Procesando orden..." : "Finalizar compra"}
+    </button>
   );
 }

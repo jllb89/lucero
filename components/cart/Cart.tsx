@@ -133,10 +133,28 @@ export default function Cart({ isOpen = false }: { isOpen?: boolean }) {
 					</li>
 				))}
 			</ul>
-			<div className="mt-4 flex items-center justify-between">
-				<div className="text-sm text-neutral-600">Subtotal</div>
-				<div className="text-lg font-medium">${subtotal.toFixed(2)}</div>
-			</div>
+					<div className="mt-4 flex items-center justify-between">
+						<div className="text-sm text-neutral-600">Subtotal</div>
+						<div className="text-lg font-medium">${subtotal.toFixed(2)}</div>
+					</div>
+
+					{/* Shipping row */}
+					<div className="flex items-center justify-between mt-2">
+						<div className="text-sm text-neutral-600">Costo de envío</div>
+						<div className="text-lg font-medium">$100.00</div>
+					</div>
+
+					{/* Divider */}
+					<div className="my-3 h-px w-full bg-zinc-200" />
+
+							{/* Total row */}
+							<div className="flex items-center justify-between">
+								<div className="text-base font-semibold">Total</div>
+								<div className="text-xl font-bold">${(subtotal + 100).toFixed(2)}</div>
+							</div>
+
+							{/* Currency note */}
+							<div className="text-xs text-neutral-300 font-light mt-4 text-left">Precios en Pesos Mexicanos (MXN)</div>
 		</div>
 	);
 }

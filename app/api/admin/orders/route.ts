@@ -16,11 +16,13 @@ export async function GET(req: Request) {
       take: perPage,
       orderBy: { createdAt: "desc" },
       include: {
-        user: {
-          select: {
-            name: true,
-            email: true, // ✅ Add this to get user email
-            phoneNumber: true,
+        orderItems: {
+          include: {
+            book: {
+              select: {
+                title: true,
+              },
+            },
           },
         },
       },
