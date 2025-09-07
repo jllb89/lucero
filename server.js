@@ -122,7 +122,10 @@ app.prepare().then(() => {
             source,
             stripeSessionId,
             orderItems: {
-              create: books.map((b) => ({ bookId: b.bookId })),
+              create: books.map((b) => ({
+                bookId: b.bookId,
+                quantity: b.quantity ?? 1,
+              })),
             },
           },
           include: {

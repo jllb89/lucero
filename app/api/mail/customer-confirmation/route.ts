@@ -16,7 +16,10 @@ export async function POST(req: Request) {
   if (!order || !order.email) {
     return NextResponse.json({ success: false, error: "Order or customer email not found" }, { status: 404 });
   }
-  const products = order.orderItems.map(item => `${item.book.title}`).join(", ");
+  // Use quantity field directly
+  const products = order.orderItems
+    .map((item: any) => item.quantity > 1 ? `${item.book.title} (x${item.quantity})` : item.book.title)
+    .join(", ");
   const html = `
     <h1>¡Gracias por tu compra!</h1>
     <p>Hola ${order.name || "cliente"},</p>

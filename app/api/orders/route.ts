@@ -27,7 +27,10 @@ export async function POST(req: NextRequest) {
         status: status || "COMPLETED",
         source: source || "manual",
         orderItems: {
-          create: books.map((b: { bookId: string }) => ({ bookId: b.bookId })),
+          create: books.map((b: { bookId: string, quantity?: number }) => ({
+            bookId: b.bookId,
+            quantity: b.quantity ?? 1,
+          })),
         },
       },
       include: {

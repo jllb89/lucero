@@ -22,14 +22,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: "Order not found." });
   }
 
-  const products = order.orderItems.map(item => `${item.book.title}`).join(", ");
+    // Use quantity field directly
+    const productsHtml = order.orderItems
+      .map((item: any) => `<li>${item.book.title} <b>x${item.quantity}</b></li>`)
+      .join("");
+
   const html = `
     <h1>Nuevo pedido recibido</h1>
     <p><b>Cliente:</b> ${order.name || "-"}</p>
     <p><b>Email:</b> ${order.email || "-"}</p>
     <p><b>Teléfono:</b> ${order.phoneNumber || "-"}</p>
     <p><b>Dirección:</b> ${order.shippingAddress || "-"}</p>
-    <p><b>Productos:</b> ${products}</p>
+    <p><b>Productos:</b></p>
+    <ul>${productsHtml}</ul>
     <p><b>Total:</b> $${order.total?.toFixed(2) || "-"}</p>
     <p><b>Fecha:</b> ${order.createdAt?.toLocaleString?.() || order.createdAt}</p>
     <hr/>

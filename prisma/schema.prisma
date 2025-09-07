@@ -47,11 +47,12 @@ model Book {
 }
 
 model OrderItem {
-  id      String @id @default(uuid())
-  orderId String
-  bookId  String
-  book    Book   @relation(fields: [bookId], references: [id])
-  order   Order  @relation(fields: [orderId], references: [id])
+  id       String @id @default(uuid())
+  orderId  String
+  bookId   String
+  book     Book   @relation(fields: [bookId], references: [id])
+  order    Order  @relation(fields: [orderId], references: [id])
+  quantity Int    @default(1)
 }
 
 model Order {

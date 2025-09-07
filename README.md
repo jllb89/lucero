@@ -40,4 +40,3 @@ node server.js
 
 stripe listen --forward-to localhost:3000/api/stripe-webhook
 
-psql "postgresql://neondb_owner:npg_ls9o8ZwtUTec@ep-lively-waterfall-a40tvhsa-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&ssl=true"

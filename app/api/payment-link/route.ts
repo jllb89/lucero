@@ -35,8 +35,8 @@ export async function POST(req: NextRequest) {
       product: product.id,
     });
 
-    // Add book IDs as metadata
-    const booksMetadata = JSON.stringify(items.map((item) => ({ bookId: item.id })));
+  // Add book IDs and quantities as metadata
+  const booksMetadata = JSON.stringify(items.map((item) => ({ bookId: item.id, quantity: item.qty })));
     // For Payment Links, shipping_address_collection always requires the address if present
     const link = await stripe.paymentLinks.create({
       line_items: [{ price: price.id, quantity: 1 }],
