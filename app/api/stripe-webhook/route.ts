@@ -41,12 +41,18 @@ export async function POST(req: NextRequest) {
       console.log("[stripe-webhook] Could not stringify session:", e);
       console.dir(session, { depth: null });
     }
-    // You may need to adjust these fields based on your Payment Link/Checkout Session setup
+    // Robust address extraction
     const email = session.customer_details?.email || session.customer_email;
-    const name = session.customer_details?.name || session.shipping?.name || null;
+    const name = session.customer_details?.name || session.shipping?.name || session.collected_information?.shipping_details?.name || null;
     const phoneNumber = session.customer_details?.phone || session.shipping?.phone || null;
-    const shippingAddress = session.shipping?.address ?
-      `${session.shipping.address.line1 || ''}, ${session.shipping.address.city || ''}, ${session.shipping.address.state || ''}, ${session.shipping.address.postal_code || ''}, ${session.shipping.address.country || ''}` : null;
+    // Try all possible address locations
+    const addressObj = session.customer_details?.address
+      || session.shipping?.address
+      || session.collected_information?.shipping_details?.address
+      || null;
+    const shippingAddress = addressObj
+      ? `${addressObj.line1 || ''}, ${addressObj.line2 || ''}, ${addressObj.city || ''}, ${addressObj.state || ''}, ${addressObj.postal_code || ''}, ${addressObj.country || ''}`.replace(/, +/g, ', ').replace(/^, |, $/g, '').replace(/,+$/, '')
+      : null;
     const total = session.amount_total ? session.amount_total / 100 : 0;
     const isDigitalOnly = false; // You may want to infer this from metadata or line items
 
@@ -82,7 +88,7 @@ export async function POST(req: NextRequest) {
       console.log(`[stripe-webhook] Order already exists for stripeSessionId: ${stripeSessionId}`);
     }
     if (!existing && userId) {
-      const status = "PAID"; // Set your desired status
+  const status = "PENDING"; // Set your desired status
       const source = "STRIPE"; // Set your desired source
       const order = await prisma.order.create({
         data: {
@@ -97,7 +103,10 @@ export async function POST(req: NextRequest) {
           source,
           stripeSessionId,
           orderItems: {
-            create: books.map((b: { bookId: string }) => ({ bookId: b.bookId })),
+            create: books.map((b: { bookId: string, quantity?: number }) => ({
+              bookId: b.bookId,
+              quantity: b.quantity || 1,
+            })),
           },
         } as any, // Cast to any to allow new fields
       });
@@ -105,7 +114,8 @@ export async function POST(req: NextRequest) {
 
       // Trigger notification email to admin(s)
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+          || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
         const notifyUrl = `${baseUrl}/api/mail/new-order`;
         console.log(`[stripe-webhook] Triggering notification email for orderId: ${order.id} to ${notifyUrl}`);
         const res = await fetch(notifyUrl, {
@@ -115,6 +125,16 @@ export async function POST(req: NextRequest) {
         });
         const notifyResult = await res.json();
         console.log(`[stripe-webhook] Notification email result:`, notifyResult);
+        // Trigger customer confirmation email
+        const customerUrl = `${baseUrl}/api/mail/customer-confirmation`;
+        console.log(`[stripe-webhook] Triggering customer confirmation email for orderId: ${order.id} to ${customerUrl}`);
+        const customerRes = await fetch(customerUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: order.id }),
+        });
+        const customerResult = await customerRes.json();
+        console.log(`[stripe-webhook] Customer confirmation email result:`, customerResult);
       } catch (e) {
         console.error(`[stripe-webhook] Failed to trigger notification email:`, e);
       }

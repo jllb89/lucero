@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       <li><b>Dirección de envío:</b> ${order.shippingAddress || "-"}</li>
       <li><b>Fecha:</b> ${order.createdAt?.toLocaleString?.() || order.createdAt}</li>
     </ul>
-    <p>Si tienes alguna duda, responde a este correo o contáctanos.</p>
+    <p>Si tienes alguna duda, contáctanos en el siguiente correo: lcastr60@gmail.com.</p>
     <hr/>
     <p>Gracias por confiar en Lucero. Pronto recibirás tu pedido.</p>
   `;
