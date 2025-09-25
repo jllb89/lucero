@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 import { verifyToken } from '@/lib/auth';
-import { storage } from '@/lib/firebaseAdmin';
+import { getStorage } from '@/lib/firebaseAdmin';
 
 const prisma = new PrismaClient();
 const MAX_DEVICES = 3;
@@ -182,7 +182,7 @@ export async function GET(
       return jsonError(404, 'NOT_FOUND', 'Libro no encontrado o sin archivo.');
     }
 
-    const [signedUrl] = await storage
+    const [signedUrl] = await getStorage()
       .bucket()
       .file(book.bookFile)
       .getSignedUrl({

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { storage } from "@/lib/firebaseAdmin";
+import { getStorage } from "@/lib/firebaseAdmin";
 import { PrismaClient } from "@prisma/client";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     /* ───── Upload to Firebase Storage ───── */
     const bookId = crypto.randomUUID();
-    const bucket = storage.bucket();
+  const bucket = getStorage().bucket();
 
     let bookFilePath = "";
     if (bookFileBuf) {
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
     // Attempt to delete orphaned PDF if it exists
     if (err && typeof err === "object" && "bookFilePath" in err) {
       try {
-        await storage.bucket().file((err as any).bookFilePath).delete();
+  await getStorage().bucket().file((err as any).bookFilePath).delete();
         console.warn("🧹  Orphaned file removed:", (err as any).bookFilePath);
       } catch {
         console.warn("⚠️  Could not delete orphaned file; may not exist yet.");

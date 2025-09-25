@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { storage } from "@/lib/firebaseAdmin";
+import { getStorage } from "@/lib/firebaseAdmin";
 import { PrismaClient } from "@prisma/client";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
         select: { id: true, bookFile: true, bookCover: true },
       });
 
-      const bucket = storage.bucket();
+  const bucket = getStorage().bucket();
 
       for (const book of booksToDelete) {
         // Try deleting assets first; log but don't fail the entire operation

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
-import { storage } from "@/lib/firebaseAdmin";
+import { getStorage } from "@/lib/firebaseAdmin";
 export const runtime = 'nodejs';
 
 const prisma = new PrismaClient();
@@ -116,8 +116,8 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     }
 
     console.log(`📤 Updating book ID: ${bookId}`);
-    const data: Record<string, any> = {};
-    const bucket = storage.bucket();
+  const data: Record<string, any> = {};
+  const bucket = getStorage().bucket();
 
     if (typeof title !== 'undefined') data.title = title;
     if (typeof author !== 'undefined') data.author = author;
