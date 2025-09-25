@@ -20,8 +20,22 @@ export async function POST(req: NextRequest) {
     }
     const items: CartItem[] = body.items;
 
-    // Base success URL (previous behavior) but append session_id placeholder
-    const base = body.successUrl || `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/purchase-confirmation`;
+  // Base success URL: prefer provided successUrl, otherwise use the current request origin
+    const origin = req.nextUrl.origin;
+    // If client sends a successUrl, keep only its path/query but force this server's origin
+    let base: string;
+    if (typeof body.successUrl === "string" && body.successUrl.length > 0) {
+      try {
+        const u = new URL(body.successUrl, origin);
+        const path = u.pathname && u.pathname !== "/" ? u.pathname.replace(/\/$/, "") : "/purchase-confirmation";
+        const search = u.search || "";
+        base = `${origin}${path}${search}`;
+      } catch {
+        base = `${origin}/purchase-confirmation`;
+      }
+    } else {
+      base = `${origin}/purchase-confirmation`;
+    }
     const successUrl = base.includes("?")
       ? `${base}&session_id={CHECKOUT_SESSION_ID}`
       : `${base}?session_id={CHECKOUT_SESSION_ID}`;
