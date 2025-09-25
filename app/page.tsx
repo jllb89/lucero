@@ -87,7 +87,7 @@ export default async function Home() {
             y materiales educativos para primaria, secundaria y bachillerato.
             <br />
             <br />
-            Crestón 312-2, Col. Jardines del Pedregal, 01900 Álvaro Obregón, Ciudad de México
+            Crestón 312-2, Col. Jardines del Pedregal, 01900 Álvaro Obregón, Ciudad de México.
             <br />
             Contacto:{" "}
             <a className="underline" href="tel:+525611846597" aria-label="Llamar al 5611846597">
