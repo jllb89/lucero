@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import "react-pdf/dist/Page/TextLayer.css";
-@import "react-pdf/dist/Page/AnnotationLayer.css";
 
 /* ─── Disallow text selection & clicks on PDF text layer ─── */
 .react-pdf__Page__textContent {

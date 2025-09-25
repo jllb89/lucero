@@ -5,9 +5,9 @@ import { cookies } from "next/headers";
 
 const prisma = new PrismaClient();
 
-export async function POST(req: NextRequest, context: { params: { id: string } }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id: userId } = await context.params;
+  const { id: userId } = await context.params;
     const body = await req.json();
     const { bookId } = body;
 
@@ -22,8 +22,9 @@ export async function POST(req: NextRequest, context: { params: { id: string } }
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = verifyToken(token);
-    if (!user || typeof user === "string" || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+    const user = verifyToken(token as string);
+    const role = (typeof user === 'object' && user && 'role' in user) ? (user as any).role : undefined;
+    if (!role || !["ADMIN", "SUPER_ADMIN"].includes(role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

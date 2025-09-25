@@ -1,10 +1,16 @@
+
 import type { NextConfig } from 'next';
 import dotenv from 'dotenv';
 import webpack from 'webpack';
+import path from 'path';
 
 dotenv.config();
 
 const nextConfig: NextConfig = {
+  outputFileTracingRoot: path.join(__dirname),
+  experimental: {
+    optimizeCss: false,
+  },
   /* ─── ESLint ─── */
   eslint: { ignoreDuringBuilds: true },
 
@@ -37,6 +43,23 @@ const nextConfig: NextConfig = {
         entryOnly: false,   // inject into every chunk
       })
     );
+
+    // 3. Disable CSS/JS minimization entirely for debugging to avoid
+    //    CssMinimizerPlugin and any PostCSS SCSS parser usage
+    config.optimization = config.optimization || {};
+    config.optimization.minimize = false;
+
+    // 4. Remove CssMinimizerPlugin (uses PostCSS SCSS parser) to avoid
+    //    "Unknown word" errors on escaped class names (e.g., placeholder\:...)
+    if (config.optimization && Array.isArray(config.optimization.minimizer)) {
+      config.optimization.minimizer = config.optimization.minimizer.filter(
+        // Some minimizers are functions or have no constructor; keep those.
+        (minimizer: any) => {
+          const name = minimizer?.constructor?.name || '';
+          return name !== 'CssMinimizerPlugin';
+        }
+      );
+    }
 
     return config;
   },

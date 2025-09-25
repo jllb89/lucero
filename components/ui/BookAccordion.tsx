@@ -68,15 +68,31 @@ export function BookAccordion() {
           <div className="space-y-4"> {/* ✅ SPACING BETWEEN FILE INPUTS FIXED */}
             <div>
               <Label>Book Cover</Label>
-              <FileInput />
+              <FileInput
+                label="Book Cover"
+                name="bookCover"
+                accept="image/*"
+                onChange={() => {}}
+              />
             </div>
             <div>
               <Label>Book File</Label>
-              <FileInput />
+              <FileInput
+                label="Book File"
+                name="bookFile"
+                accept=".pdf,.epub"
+                onChange={() => {}}
+              />
             </div>
             <div>
               <Label>Book Images</Label>
-              <FileInput />
+              <FileInput
+                label="Book Images"
+                name="bookImages"
+                accept="image/*"
+                multiple
+                onChange={() => {}}
+              />
             </div>
           </div>
         </AccordionContent>

@@ -1,31 +1,33 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { verifyToken } from "@/lib/auth";
-import { cookies } from "next/headers"; // ✅ Must be used asynchronously
+import { cookies } from "next/headers";
 
 const prisma = new PrismaClient();
 
-// ✅ Correct API Route Fix
-export async function PUT(req: NextRequest, context: { params: { id: string } }) {
+// Route handler for updating an order by ID
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    // ✅ Correctly await params (per Next.js 15 documentation)
-    const { id: orderId } = await context.params;
+  const { id: orderId } = await params;
 
     if (!orderId) {
       return NextResponse.json({ error: "Missing order ID" }, { status: 400 });
     }
 
-    // ✅ Correctly await cookies() (per Next.js 15 documentation)
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value || null;
 
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // ✅ Verify token
-    const user = verifyToken(token);
-    if (!user || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+  const user = verifyToken(token);
+  const role = (typeof user === 'object' && user && 'role' in user) ? (user as any).role : undefined;
+  if (!role || !["ADMIN", "SUPER_ADMIN"].includes(role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -38,7 +40,7 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
       return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
     }
 
-    console.log(`🔄 Updating order status for ID: ${orderId} to ${status}`);
+  console.log(`🔄 Updating order status for ID: ${orderId} to ${status}`);
 
     // ✅ Update order in database
     const updatedOrder = await prisma.order.update({

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { NextResponse } from 'next/server';
 
@@ -23,7 +23,8 @@ export async function POST(req: Request) {
         email,
         name,
         password: hashedPassword,
-        role: 'USER', // Default role
+        role: Role.USER, // Default role
+        phoneNumber: '', // Required by schema; set empty until provided
       },
     });
 

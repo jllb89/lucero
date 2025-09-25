@@ -4,8 +4,11 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // GET /api/orders/[id]
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-	const orderId = params.id;
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+	const { id: orderId } = await params;
 	if (!orderId) {
 		return NextResponse.json({ error: "Missing orderId" }, { status: 400 });
 	}

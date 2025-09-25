@@ -6,10 +6,10 @@ import { cookies } from "next/headers";
 const prisma = new PrismaClient();
 
 // ✅ Fetch a Single User (GET)
-export async function GET(req: NextRequest, context: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     // ✅ Await params correctly
-    const { id: userId } = await context.params;
+  const { id: userId } = await context.params;
 
     if (!userId) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 });
@@ -24,8 +24,9 @@ export async function GET(req: NextRequest, context: { params: { id: string } })
     }
 
     // ✅ Verify token
-    const user = verifyToken(token);
-    if (!user || typeof user !== "object" || !("role" in user) || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+    const user = verifyToken(token as string);
+    const role = (typeof user === 'object' && user && 'role' in user) ? (user as any).role : undefined;
+    if (!role || !["ADMIN", "SUPER_ADMIN"].includes(role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -70,9 +71,9 @@ export async function GET(req: NextRequest, context: { params: { id: string } })
 
 // Add this below your GET handler
 
-export async function PUT(req: NextRequest, context: { params: { id: string } }) {
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id: userId } = context.params;
+  const { id: userId } = await context.params;
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
 
@@ -80,8 +81,9 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = verifyToken(token);
-    if (!user || typeof user !== "object" || !("role" in user) || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+    const user = verifyToken(token as string);
+    const role = (typeof user === 'object' && user && 'role' in user) ? (user as any).role : undefined;
+    if (!role || !["ADMIN", "SUPER_ADMIN"].includes(role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

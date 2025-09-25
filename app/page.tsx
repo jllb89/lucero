@@ -3,8 +3,8 @@ import SearchBar from "@/components/SearchBar";
 import Storefront, { StoreBook } from "@/components/home/Storefront";
 import FAQ from "@/components/home/FAQ";
 import { prisma } from "@/lib/prisma";
-// No signed URLs for covers – build public GCS URL
 import { CartProvider } from "@/hooks/useCart";
+import { Suspense } from "react";
 import CartBadge from "@/components/cart/CartBadge";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -58,7 +58,9 @@ export default async function Home() {
               Editorial Lucero.
             </span>
           </h1>
-          <Storefront initialBooks={books} />
+          <Suspense fallback={<div className="text-sm text-neutral-500">Cargando libros…</div>}>
+            <Storefront initialBooks={books} />
+          </Suspense>
         </div>
       </section>
 
